@@ -366,7 +366,9 @@ function processSale(token, o) {
     const nowS = off && /^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d$/.test(String(o.soldAt || '')) ? o.soldAt : fmt_(new Date());
     const day = nowS.slice(0, 10).replace(/-/g, '');
     const seq = rows_('Sales').filter(s => String(s.SaleID).indexOf('S-' + day) === 0).length + 1;
-    const saleId = 'S-' + day + '-' + ('0000' + seq).slice(-4);
+    let saleId = 'S-' + day + '-' + ('0000' + seq).slice(-4);
+    // An offline sale keeps the receipt number already printed for the customer.
+    if (off && /^S-\d{8}-L[A-Z0-9]{4}$/.test(String(o.rno || '')) && !rows_('Sales').some(s => s.SaleID === o.rno)) saleId = o.rno;
     const dLabel = dtype === 'None' ? '' : dtype;
 
     const ss = getSS_();

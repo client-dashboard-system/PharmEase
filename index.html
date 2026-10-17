@@ -97,11 +97,14 @@ tr.click{cursor:pointer}
 .cart h3{margin:0;padding:14px 18px;background:var(--c5);color:#fff;font-size:16px;display:flex;justify-content:space-between;align-items:center}
 .cart h3 button{background:none;border:0;color:var(--c1);font-size:13px;text-decoration:underline}
 #cartItems{max-height:260px;overflow:auto;padding:6px 14px}
-.ci{display:grid;grid-template-columns:1fr auto 74px 24px;gap:8px;align-items:center;padding:9px 0;border-bottom:1px dashed var(--line)}
+.ci{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"n x" "q t";gap:6px 10px;align-items:center;padding:10px 0;border-bottom:1px dashed var(--line)}
+.ci .cn{grid-area:n} .ci .qty{grid-area:q} .ci .lt{grid-area:t} .ci .x{grid-area:x}
 .ci small{display:block;color:var(--muted)}
 .qty{display:flex;align-items:center;gap:6px}
 .qty button{width:28px;height:28px;border-radius:8px;border:1.5px solid var(--c1);background:#fff;font-weight:800;color:var(--c4)}
-.qty span{min-width:22px;text-align:center;font-weight:800}
+.qin{width:62px;height:28px;text-align:center;font-weight:800;font-size:16px;border:1.5px solid var(--c1);border-radius:8px;padding:0;background:#fff;-moz-appearance:textfield}
+.qin::-webkit-outer-spin-button,.qin::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.qin:focus{border-color:var(--c3);outline:none;box-shadow:0 0 0 3px rgba(55,179,193,.25)}
 .ci .lt{text-align:right;font-weight:800}
 .ci .x{border:0;background:none;color:var(--red);font-size:16px}
 .cbody{padding:14px 18px;background:#F6FBFC;border-top:1px solid var(--line)}
@@ -225,7 +228,7 @@ tr.click{cursor:pointer}
   .in{min-height:44px}
   .chip{min-height:40px}
   .qty button{width:38px;height:38px;font-size:18px}
-  .ci{grid-template-columns:1fr auto 70px 34px}
+  .qin{height:38px;width:68px}
   .ci .x{min-height:36px}
   .quick button,.pay button{min-height:40px}
   .mi{padding:14px}
@@ -249,10 +252,13 @@ tr.click{cursor:pointer}
 .err{color:var(--red);font-weight:700;min-height:20px;margin:6px 0}
 .acopy{text-align:center;color:var(--muted);font-size:12px;margin-top:20px}
 @media (max-width:700px){.tw td.act:empty{display:none}}
+@page{margin:0}
 @media print{
-  .app,.ov,.toast,.load{display:none!important}
-  #printArea{display:block!important;padding:10px}
-  body{background:#fff}
+  .app,.ov,.toast,.load,.auth,.scrim,.cartbar{display:none!important}
+  html,body{background:#fff;height:auto}
+  #printArea{display:block!important;padding:12mm}
+  #printArea.is-receipt{width:76mm;margin:0 auto;padding:4mm 3mm}
+  #printArea.is-receipt .rc{font-size:12px}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
@@ -429,7 +435,12 @@ function confirmBox(msg, label, fn) {
     '<button class="btn alt" onclick="closeModal()">Cancel</button><button class="btn danger" id="yes">' + label + '</button>');
   $('yes').onclick = () => { closeModal(); fn(); };
 }
-function printEl(id) { $('printArea').innerHTML = $(id).innerHTML; window.print(); }
+function doPrint(cls) {
+  $('printArea').className = cls || '';
+  const t = document.title; document.title = ' ';      // keep the page name out of the printout
+  window.print(); document.title = t;
+}
+function printEl(id) { $('printArea').innerHTML = $(id).innerHTML; doPrint(id.indexOf('rcpt') === 0 ? 'is-receipt' : ''); }
 function toggleMenu(o) { $('side').classList.toggle('open', o); $('scrim').classList.toggle('on', o); }
 function stockInfo(p) {
   if (p.stock < 0) return { t: 'Check count', c: 'red' };
@@ -495,10 +506,24 @@ function chg(id, d) {
 }
 function rm(id) { S.cart = S.cart.filter(x => x.id !== id); renderCart(); }
 function clearCart() { S.cart = []; $('cash').value = ''; resetDiscount(); renderCart(); }
+/* Typing a quantity: totals update as you type; the value is checked against stock when you finish */
+function liveQty(el) {
+  const c = S.cart.find(x => x.id === el.dataset.id), p = prod(el.dataset.id), v = Math.floor(+el.value);
+  if (c && p && v >= 1 && v <= p.stock) { c.qty = v; $('lt-' + c.id).textContent = peso(p.price * v); calc(); }
+}
+function setQty(el) {
+  const c = S.cart.find(x => x.id === el.dataset.id), p = prod(el.dataset.id);
+  if (!c || !p) return;
+  let v = Math.floor(+el.value);
+  if (!(v >= 1)) v = c.qty;
+  if (v > p.stock) { v = p.stock; toast('Only ' + p.stock + ' in stock.', true); }
+  c.qty = v; renderCart();
+}
+function qkey(e) { if (e.key === 'Enter') { e.target.blur(); $('posSearch').focus(); } }
 function renderCart() {
   $('cartItems').innerHTML = S.cart.length ? S.cart.map(c => {
     const p = prod(c.id);
-    return '<div class="ci"><div><b>' + esc(p.name) + '</b><small>' + peso(p.price) + ' each</small></div><div class="qty"><button onclick="chg(\'' + c.id + '\',-1)" aria-label="Less">−</button><span>' + c.qty + '</span><button onclick="chg(\'' + c.id + '\',1)" aria-label="More">+</button></div><div class="lt">' + peso(p.price * c.qty) + '</div><button class="x" onclick="rm(\'' + c.id + '\')" aria-label="Remove">✕</button></div>';
+    return '<div class="ci"><div class="cn"><b>' + esc(p.name) + '</b><small>' + peso(p.price) + ' each</small></div><div class="qty"><button onclick="chg(\'' + c.id + '\',-1)" aria-label="Less">−</button><input class="qin" type="number" inputmode="numeric" min="1" max="' + p.stock + '" value="' + c.qty + '" data-id="' + c.id + '" aria-label="Quantity" onfocus="this.select()" oninput="liveQty(this)" onchange="setQty(this)" onkeydown="qkey(event)"><button onclick="chg(\'' + c.id + '\',1)" aria-label="More">+</button></div><div class="lt" id="lt-' + c.id + '">' + peso(p.price * c.qty) + '</div><button class="x" onclick="rm(\'' + c.id + '\')" aria-label="Remove">✕</button></div>';
   }).join('') : '<div class="empty"><b>Cart is empty</b>Click a product to start a sale.</div>';
   $('payBtns').innerHTML = ['Cash', 'GCash', 'Card'].map(m => '<button class="' + (S.method === m ? 'on' : '') + '" onclick="S.method=\'' + m + '\';renderCart()">' + m + '</button>').join('');
   calc();
@@ -547,7 +572,7 @@ function cartSheet(o) { $('cartPanel').classList.toggle('open', o); $('cscrim').
 function setCash(n) { $('cash').value = n; calc(); }
 async function checkout() {
   const t = totals();
-  const payload = { cid: newCid(), soldAt: nowStr(), cashier: S.user.name,
+  const payload = { cid: newCid(), rno: newRno(), soldAt: nowStr(), cashier: S.user.name,
     items: S.cart.map(c => ({ id: c.id, qty: c.qty, price: prod(c.id).price })),
     discountType: t.type, discount: t.disc, discountName: $('dName').value, discountId: $('dId').value,
     method: S.method, cash: S.method === 'Cash' ? +$('cash').value : t.total };
@@ -564,7 +589,7 @@ function finishSale(sale, products) {
   cartSheet(false); setProducts(products); showReceipt(sale); toast('Sale completed ✔');
 }
 function receiptHtml(s) {
-  return '<div class="rc"><div style="text-align:center"><b>' + esc(S.store) + '</b><br>Sales Receipt<br>' + esc(s.id) + '<br>' + esc(s.date) + (s.cashier ? '<br>Cashier: ' + esc(s.cashier) : '') + (s.pending ? '<br><b>(Saved offline - will sync)</b>' : '') + '</div><hr>' +
+  return '<div class="rc"><div style="text-align:center"><b>' + esc(S.store) + '</b><br>Sales Receipt<br>' + esc(s.id) + '<br>' + esc(s.date) + (s.cashier ? '<br>Cashier: ' + esc(s.cashier) : '') + '</div><hr>' +
     s.items.map(i => '<div>' + esc(i.name) + '</div><div class="tl"><span>' + i.qty + ' × ' + peso(i.price) + '</span><span>' + peso(i.total) + '</span></div>').join('') + '<hr>' +
     '<div class="tl"><span>Subtotal</span><span>' + peso(s.subtotal) + '</span></div>' +
     (s.discount ? '<div class="tl"><span>' + (s.discountType ? esc(s.discountType) + ' discount' : 'Discount') + '</span><span>-' + peso(s.discount) + '</span></div>' : '') + (s.discountRef ? '<div>Customer: ' + esc(s.discountRef) + '</div>' : '') +
@@ -620,7 +645,7 @@ function printRestock() {
   const low = S.products.filter(p => p.stock <= p.reorder);
   if (!low.length) return toast('Nothing to print — no low stock items.');
   $('printArea').innerHTML = '<h2>Restock list — ' + esc(S.store) + '</h2><p>' + ymd(new Date()) + '</p><table border="1" cellpadding="6" style="border-collapse:collapse;width:100%"><tr><th align="left">Product</th><th>In stock</th><th>Order qty</th></tr>' + low.map(p => '<tr><td>' + esc(p.name) + '</td><td align="center">' + p.stock + '</td><td align="center">' + Math.max(p.reorder * 2 - p.stock, 1) + ' ' + esc(p.unit) + '</td></tr>').join('') + '</table>';
-  window.print();
+  doPrint('');
 }
 
 /* ---------- Products ---------- */
@@ -726,6 +751,7 @@ const API_URL_DEFAULT = '';   // <-- paste your Apps Script web app link (ending
 const PWA = typeof google === 'undefined' || !google.script;
 const apiUrl = () => { if (API_URL_DEFAULT) return API_URL_DEFAULT; try { return localStorage.getItem('pe_api') || ''; } catch (e) { return ''; } };
 const safe = p => Promise.resolve(p).catch(() => null);
+const newRno = () => 'S-' + ymd(new Date()).replace(/-/g, '') + '-L' + Math.random().toString(36).slice(2, 6).toUpperCase().padEnd(4, '0');
 const newCid = () => 'C' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 const nowStr = () => { const d = new Date(); return ymd(d) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()); };
 
@@ -810,9 +836,9 @@ async function offlineLogin(u, pin) {
 /* Selling while offline: the sale is saved on this device and sent to the server later */
 async function sellOffline(payload, t) {
   const sen = t.type === 'Senior Citizen' || t.type === 'PWD';
-  const sale = { id: 'PENDING-' + payload.cid.slice(-5).toUpperCase(), date: payload.soldAt, subtotal: t.sub, discount: t.disc,
+  const sale = { id: payload.rno, date: payload.soldAt, subtotal: t.sub, discount: t.disc,
     discountType: t.type === 'None' ? '' : t.type, discountRef: sen ? payload.discountName.trim() + ' / ID ' + payload.discountId.trim() : '',
-    total: t.total, method: payload.method, cash: payload.cash, change: Math.max(0, payload.cash - t.total), cashier: payload.cashier, pending: true,
+    total: t.total, method: payload.method, cash: payload.cash, change: Math.max(0, payload.cash - t.total), cashier: payload.cashier,
     items: S.cart.map(c => { const p = prod(c.id); return { name: p.name, qty: c.qty, price: p.price, total: p.price * c.qty }; }) };
   try { await DB.outPut({ cid: payload.cid, soldAt: payload.soldAt, payload, receipt: sale }); }
   catch (e) { toast('Could not save this sale on the device. Please write it down and try again.', true); return; }

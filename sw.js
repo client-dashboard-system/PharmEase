@@ -1,7 +1,7 @@
 /* PharmEase service worker — keeps the app itself available offline.
    (Your sales and stock data are kept separately, in the browser's IndexedDB.)
    To publish an update, change CACHE to a new name, e.g. 'pharmease-v2'. */
-const CACHE = 'pharmease-v1';
+const CACHE = 'pharmease-v2';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', e => {
