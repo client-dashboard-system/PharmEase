@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#1A4D6D">
+<meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="PharmEase">
+<link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icons/icon-192.png"><link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>PharmEase</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --c1:#B3D7E0; --c2:#37B3C1; --c3:#3A9BBE; --c4:#2A7A9D; --c5:#1A4D6D;
+  --bg:#EDF6F9; --card:#fff; --text:#16394F; --muted:#5E7F90; --line:#D3E6EC;
+  --red:#C93C3C; --red-bg:#FBE6E6; --amber:#9A6A00; --amber-bg:#FFF1CC; --green:#1E7F4B; --green-bg:#DDF4E7;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{font-family:'Nunito Sans',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;color:var(--text);background:var(--bg);font-size:15px}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--c2);outline-offset:2px}
+
+.app{display:flex;height:100vh}
+.side{width:248px;flex:none;background:var(--c5);color:#fff;display:flex;flex-direction:column;transition:transform .2s}
+.brand{padding:22px 20px 18px;border-bottom:1px solid rgba(255,255,255,.12)}
+.brand b{display:block;font-size:19px;font-weight:800;letter-spacing:.2px}
+.brand small{color:var(--c1);font-size:13px}
+.menu{padding:12px 10px;flex:1;overflow:auto}
+.mi{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;margin-bottom:4px;border:0;border-radius:10px;background:none;color:#DCEEF3;text-align:left;font-weight:600;position:relative}
+.mi .ic{font-size:20px;width:26px;text-align:center}
+.mi small{display:block;font-weight:400;font-size:12px;color:var(--c1);opacity:.85}
+.mi:hover{background:rgba(255,255,255,.08)}
+.mi.on{background:var(--c4);color:#fff;box-shadow:inset 4px 0 0 var(--c2)}
+.badge{margin-left:auto;background:var(--red);color:#fff;border-radius:99px;font-size:12px;font-weight:800;padding:2px 8px}
+.sfoot{padding:14px 20px;font-size:12px;color:var(--c1);border-top:1px solid rgba(255,255,255,.12)}
+
+.main{flex:1;overflow:auto;min-width:0}
+.top{display:none;align-items:center;gap:12px;background:var(--c5);color:#fff;padding:10px 14px;position:sticky;top:0;z-index:20}
+.top button{background:none;border:0;color:#fff;font-size:26px;line-height:1}
+.page{display:none;padding:26px 30px 40px;max-width:1400px}
+.page.on{display:block}
+.ph{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;justify-content:space-between;margin-bottom:18px}
+.ph h1{margin:0;font-size:26px;font-weight:800;color:var(--c5)}
+.ph p{margin:3px 0 0;color:var(--muted)}
+.tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:18px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;border-top:4px solid var(--c3)}
+.stat span{color:var(--muted);font-size:13px;font-weight:600}
+.stat b{display:block;font-size:26px;margin-top:4px;color:var(--c5)}
+.stat.red{border-top-color:var(--red)} .stat.amber{border-top-color:#E0A21B} .stat.green{border-top-color:var(--c2)}
+
+.btn{border:0;border-radius:10px;padding:10px 16px;font-weight:700;background:var(--c4);color:#fff;transition:background .15s}
+.btn:hover{background:var(--c5)}
+.btn.alt{background:var(--c1);color:var(--c5)} .btn.alt:hover{background:#9CC9D5}
+.btn.ok{background:var(--c2);color:#06323a} .btn.ok:hover{background:#2da0ad}
+.btn.danger{background:var(--red-bg);color:var(--red)} .btn.danger:hover{background:#f5cfcf}
+.btn.sm{padding:6px 11px;font-size:13px;border-radius:8px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.in{border:1.5px solid var(--c1);border-radius:10px;padding:10px 12px;background:#fff;width:100%}
+.in:focus{border-color:var(--c3);outline:none;box-shadow:0 0 0 3px rgba(55,179,193,.25)}
+.search{max-width:320px}
+label.f{display:block;font-weight:700;font-size:13px;margin-bottom:5px;color:var(--c5)}
+.fg{margin-bottom:14px} .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.hint{font-size:12px;color:var(--muted);margin-top:4px}
+
+.tw{overflow:auto;border:1px solid var(--line);border-radius:14px;background:#fff}
+table{width:100%;border-collapse:collapse;min-width:640px}
+th{background:var(--c1);color:var(--c5);text-align:left;font-size:13px;padding:11px 14px;position:sticky;top:0}
+td{padding:11px 14px;border-top:1px solid var(--line);vertical-align:middle}
+tbody tr:hover{background:#F6FBFC}
+tr.click{cursor:pointer}
+.r{text-align:right} .c{text-align:center}
+.tag{display:inline-block;border-radius:99px;padding:3px 10px;font-size:12px;font-weight:800}
+.tag.red{background:var(--red-bg);color:var(--red)} .tag.amber{background:var(--amber-bg);color:var(--amber)} .tag.green{background:var(--green-bg);color:var(--green)} .tag.gray{background:#E4ECEF;color:#58707d}
+.empty{padding:40px 20px;text-align:center;color:var(--muted)}
+.empty b{display:block;font-size:17px;color:var(--c5);margin-bottom:4px}
+.sub{color:var(--muted);font-size:13px}
+
+/* POS */
+.pos{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:18px;align-items:start}
+.chips{display:flex;gap:8px;overflow:auto;padding-bottom:6px;margin:12px 0}
+.chip{flex:none;border:1.5px solid var(--c1);background:#fff;border-radius:99px;padding:6px 14px;font-weight:700;color:var(--c4)}
+.chip.on{background:var(--c3);border-color:var(--c3);color:#fff}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;max-height:calc(100vh - 250px);overflow:auto;padding:2px}
+.pc{background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:12px;text-align:left;display:flex;flex-direction:column;gap:4px;min-height:112px}
+.pc:hover{border-color:var(--c2);box-shadow:0 4px 14px rgba(42,122,157,.15)}
+.pc:disabled{opacity:.5;cursor:not-allowed;box-shadow:none;border-color:var(--line)}
+.pc b{font-size:14px;line-height:1.25}
+.pc .pr{margin-top:auto;font-size:17px;font-weight:800;color:var(--c4)}
+.cart{position:sticky;top:16px;padding:0;overflow:hidden}
+.cart h3{margin:0;padding:14px 18px;background:var(--c5);color:#fff;font-size:16px;display:flex;justify-content:space-between;align-items:center}
+.cart h3 button{background:none;border:0;color:var(--c1);font-size:13px;text-decoration:underline}
+#cartItems{max-height:260px;overflow:auto;padding:6px 14px}
+.ci{display:grid;grid-template-columns:1fr auto 74px 24px;gap:8px;align-items:center;padding:9px 0;border-bottom:1px dashed var(--line)}
+.ci small{display:block;color:var(--muted)}
+.qty{display:flex;align-items:center;gap:6px}
+.qty button{width:28px;height:28px;border-radius:8px;border:1.5px solid var(--c1);background:#fff;font-weight:800;color:var(--c4)}
+.qty span{min-width:22px;text-align:center;font-weight:800}
+.ci .lt{text-align:right;font-weight:800}
+.ci .x{border:0;background:none;color:var(--red);font-size:16px}
+.cbody{padding:14px 18px;background:#F6FBFC;border-top:1px solid var(--line)}
+.tl{display:flex;justify-content:space-between;margin:5px 0}
+.tl.big{font-size:24px;font-weight:800;color:var(--c5);margin:10px 0}
+.quick{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.quick button{border:1.5px solid var(--c1);background:#fff;border-radius:8px;padding:4px 10px;font-weight:700;color:var(--c4);font-size:13px}
+.chg{background:var(--green-bg);color:var(--green);border-radius:10px;padding:8px 12px;font-weight:800;display:flex;justify-content:space-between;margin-top:8px}
+.chg.bad{background:var(--red-bg);color:var(--red)}
+.pay{display:flex;gap:6px;margin:8px 0}
+.pay button{flex:1;border:1.5px solid var(--c1);background:#fff;border-radius:10px;padding:8px;font-weight:700;color:var(--c4)}
+.pay button.on{background:var(--c4);border-color:var(--c4);color:#fff}
+.go{width:100%;padding:15px;font-size:17px;margin-top:10px}
+
+/* Reports */
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px;margin-top:16px}
+.card h3{margin:0 0 12px;font-size:16px;color:var(--c5)}
+.bars{display:flex;align-items:flex-end;gap:6px;height:190px;padding-top:10px;overflow-x:auto}
+.bar{flex:1;min-width:22px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+.bar i{display:block;width:100%;max-width:46px;background:linear-gradient(var(--c2),var(--c3));border-radius:6px 6px 0 0;min-height:2px}
+.bar span{font-size:11px;color:var(--muted);margin-top:5px;white-space:nowrap}
+.bar em{font-style:normal;font-size:10px;color:var(--c5);font-weight:700;margin-bottom:3px}
+.hbar{margin:9px 0}
+.hbar div{display:flex;justify-content:space-between;font-size:14px;margin-bottom:3px}
+.hbar i{display:block;height:9px;border-radius:9px;background:var(--c1)}
+.hbar i u{display:block;height:100%;border-radius:9px;background:var(--c4)}
+
+/* Modal + toast */
+.ov{position:fixed;inset:0;background:rgba(16,45,62,.55);display:none;align-items:center;justify-content:center;padding:16px;z-index:50}
+.ov.on{display:flex}
+.md{background:#fff;border-radius:16px;width:100%;max-width:520px;max-height:92vh;display:flex;flex-direction:column;overflow:hidden}
+.md.wide{max-width:640px}
+.mh{padding:16px 22px;background:var(--c5);color:#fff;display:flex;justify-content:space-between;align-items:center}
+.mh h2{margin:0;font-size:18px}
+.mh button{background:none;border:0;color:#fff;font-size:24px;line-height:1}
+.mb{padding:20px 22px;overflow:auto}
+.mf{padding:14px 22px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end;background:#F6FBFC}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(30px);opacity:0;background:var(--c5);color:#fff;padding:12px 20px;border-radius:12px;font-weight:700;z-index:95;transition:.25s;pointer-events:none;max-width:90vw}
+.toast.on{opacity:1;transform:translateX(-50%)}
+.toast.err{background:var(--red)}
+.load{position:fixed;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--c1),var(--c2),var(--c1));background-size:200% 100%;animation:ld 1s linear infinite;z-index:90;display:none}
+@keyframes ld{to{background-position:-200% 0}}
+.rc{font-family:ui-monospace,Consolas,monospace;font-size:13px}
+.rc hr{border:0;border-top:1px dashed #888}
+.rc .tl{margin:3px 0}
+#printArea{display:none}
+.scrim{display:none}
+
+.cv{display:block}
+.closeSheet,.cartbar{display:none}
+.top{padding-top:calc(10px + env(safe-area-inset-top,0px))}
+
+/* Tablet landscape / small laptop */
+@media (max-width:1100px){
+  .side{width:210px}
+  .pos{grid-template-columns:minmax(0,1fr) 330px}
+  .page{padding:22px 20px 40px}
+  .grid{grid-template-columns:repeat(auto-fill,minmax(135px,1fr))}
+}
+/* Tablet portrait & phones: sidebar becomes a slide-in menu */
+@media (max-width:820px){
+  .side{position:fixed;inset:0 auto 0 0;z-index:60;transform:translateX(-100%);width:min(290px,86vw);padding-top:env(safe-area-inset-top,0px)}
+  .side.open{transform:none;box-shadow:8px 0 30px rgba(0,0,0,.35)}
+  .scrim.on{display:block;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:55}
+  .top{display:flex}
+  .top button{min-width:44px;min-height:44px}
+  .page{padding:18px 16px 40px}
+  .grid{max-height:calc(100vh - 230px)}
+}
+@media (max-width:560px){
+  .row2{grid-template-columns:1fr}
+  .stats{grid-template-columns:repeat(2,1fr);gap:10px}
+  .stat{padding:12px 14px} .stat b{font-size:20px}
+  .ph h1{font-size:22px}
+  .tools{width:100%}
+  .tools .in{flex:1;min-width:130px}
+  .search{max-width:none;width:100%}
+  .cols{grid-template-columns:1fr}
+}
+/* Phones */
+@media (max-width:700px){
+  .in{font-size:16px}
+  #p-pos{padding-bottom:96px}
+  .pos{grid-template-columns:1fr}
+  .grid{max-height:none;grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
+  .cart{position:fixed;left:0;right:0;bottom:0;top:auto;z-index:58;border:0;border-radius:18px 18px 0 0;max-height:90vh;display:flex;flex-direction:column;
+    transform:translateY(105%);visibility:hidden;transition:transform .25s,visibility .25s;box-shadow:0 -10px 30px rgba(0,0,0,.3)}
+  .cart.open{transform:none;visibility:visible}
+  .cart h3{flex:none}
+  .cart h3 span{display:flex;gap:14px;align-items:center}
+  .closeSheet{display:inline-block}
+  #cartItems{flex:1 1 auto;max-height:none;min-height:70px}
+  .cbody{flex:none;overflow:auto;padding-bottom:calc(14px + env(safe-area-inset-bottom,0px))}
+  .cartbar.on{display:flex}
+  .cartbar{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:40;background:var(--c4);color:#fff;border:0;border-radius:14px;padding:15px 18px;font-size:16px;justify-content:space-between;align-items:center;box-shadow:0 8px 24px rgba(26,77,109,.45)}
+  .toast{bottom:calc(88px + env(safe-area-inset-bottom,0px))}
+  /* modals become bottom sheets */
+  .ov{align-items:flex-end;padding:0}
+  .md,.md.wide{max-width:100%;border-radius:18px 18px 0 0;max-height:94vh}
+  .mf{flex-wrap:wrap;padding-bottom:calc(14px + env(safe-area-inset-bottom,0px))}
+  .mf .btn{flex:1 1 auto}
+  /* tables become cards */
+  .tw{border:0;background:none;overflow:visible}
+  .tw table{min-width:0;display:block}
+  .tw thead{display:none}
+  .tw tbody{display:block}
+  .tw tbody tr{display:block;background:#fff;border:1px solid var(--line);border-radius:12px;margin-bottom:10px;padding:6px 14px}
+  .tw td{display:flex;justify-content:space-between;align-items:center;gap:14px;border:0;padding:7px 0;text-align:right}
+  .tw td::before{content:attr(data-label);font-weight:700;color:var(--muted);font-size:13px;text-align:left;flex:none}
+  .tw td .cv{text-align:right}
+  .tw td.act{justify-content:flex-start;flex-wrap:wrap;gap:8px;padding:10px 0 6px}
+  .tw td.act::before{display:none}
+  .tw td.act .btn{flex:1 1 auto}
+  .tw td[colspan]{display:block;text-align:center}
+  .tw td[colspan]::before{display:none}
+}
+/* Touch screens: bigger tap targets */
+@media (pointer:coarse){
+  .btn{min-height:44px}
+  .btn.sm{min-height:40px;padding:8px 14px}
+  .in{min-height:44px}
+  .chip{min-height:40px}
+  .qty button{width:38px;height:38px;font-size:18px}
+  .ci{grid-template-columns:1fr auto 70px 34px}
+  .ci .x{min-height:36px}
+  .quick button,.pay button{min-height:40px}
+  .mi{padding:14px}
+}
+.sfoot{font-size:12px}
+.net{display:inline-block;font-size:12px;font-weight:800;border-radius:99px;padding:4px 11px;background:rgba(255,255,255,.12);color:#9BF3C8;white-space:nowrap}
+.net.off{background:var(--amber-bg);color:var(--amber);cursor:pointer}
+.net.pend{background:rgba(55,179,193,.28);color:#fff;cursor:pointer}
+.sfoot .net{margin-bottom:10px}
+.sfoot #whoami{color:#fff;font-weight:700;font-size:13px}
+.sfoot #whoami small{display:block;color:var(--c1);font-weight:400}
+.signout{margin:8px 0;width:100%;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:8px;padding:7px;font-weight:700}
+.signout:hover{background:rgba(255,255,255,.2)}
+.sfoot .copy{opacity:.8;font-size:11px;line-height:1.4}
+.auth{position:fixed;inset:0;z-index:85;background:linear-gradient(135deg,var(--c5),var(--c4) 55%,var(--c3));display:none;align-items:center;justify-content:center;padding:16px;overflow:auto}
+.auth.on{display:flex}
+.acard{background:#fff;border-radius:18px;width:100%;max-width:400px;padding:30px 28px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.acard .logo{font-size:26px;font-weight:800;color:var(--c5);text-align:center}
+.acard .tag2{text-align:center;color:var(--muted);margin:2px 0 22px}
+.acard h2{margin:0 0 4px;font-size:20px;color:var(--c5)}
+.err{color:var(--red);font-weight:700;min-height:20px;margin:6px 0}
+.acopy{text-align:center;color:var(--muted);font-size:12px;margin-top:20px}
+@media (max-width:700px){.tw td.act:empty{display:none}}
+@media print{
+  .app,.ov,.toast,.load{display:none!important}
+  #printArea{display:block!important;padding:10px}
+  body{background:#fff}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="load" id="load"></div>
+<div class="scrim" id="scrim" onclick="toggleMenu(false)"></div>
+
+<div class="app">
+  <aside class="side" id="side">
+    <div class="brand"><b>💊 PharmEase</b><small>Pharmacy Inventory &amp; Sales</small></div>
+    <nav class="menu" id="menu"></nav>
+    <div class="sfoot"><div class="net" id="netSide"></div><div id="whoami"></div><button class="signout" id="installBtn" style="display:none" onclick="installApp()">⬇ Install app</button><button class="signout" onclick="logout()">Sign out</button><div class="copy">© 2026 PharmEase. All rights reserved.</div></div>
+  </aside>
+
+  <div class="main">
+    <div class="top"><button onclick="toggleMenu(true)" aria-label="Open menu">☰</button><b id="topTitle">Pharmacy</b><span class="net" id="netTop" style="margin-left:auto"></span></div>
+
+    <!-- POS -->
+    <section class="page" id="p-pos">
+      <div class="ph"><div><h1>Point of Sale</h1><p>Click a product to add it to the cart, or scan a barcode.</p></div></div>
+      <div class="pos">
+        <div>
+          <input class="in" id="posSearch" placeholder="🔍  Search name, ID or scan barcode… (Enter to add)" autocomplete="off">
+          <div class="chips" id="posChips"></div>
+          <div class="grid" id="posGrid"></div>
+        </div>
+        <div class="card cart" id="cartPanel">
+          <h3>Current Sale <span><button onclick="clearCart()">Clear</button><button class="closeSheet" onclick="cartSheet(false)">Close ✕</button></span></h3>
+          <div id="cartItems"></div>
+          <div class="cbody">
+            <div class="tl"><span>Subtotal</span><b id="tSub">₱0.00</b></div>
+            <div class="fg" style="margin:6px 0"><label class="f" for="dtype">Discount</label><select class="in" id="dtype" onchange="onDtype()"></select></div>
+            <input class="in" id="disc" type="number" min="0" step="0.01" placeholder="Discount amount (₱)" oninput="calc()" style="display:none;margin-bottom:8px">
+            <div id="dSen" style="display:none;margin-bottom:8px">
+              <input class="in" id="dName" placeholder="Customer full name" oninput="calc()" style="margin-bottom:6px">
+              <input class="in" id="dId" placeholder="Senior Citizen / PWD ID number" oninput="calc()">
+              <div class="hint">Required. VAT is removed and 20% is deducted automatically.</div>
+            </div>
+            <div class="tl" id="discRow" style="display:none"><span>Discount</span><b id="tDisc">-₱0.00</b></div>
+            <div class="tl big"><span>TOTAL</span><span id="tTotal">₱0.00</span></div>
+            <div class="pay" id="payBtns"></div>
+            <div id="cashBox">
+              <label class="f" for="cash">Cash received</label>
+              <input class="in" id="cash" type="number" min="0" step="0.01" placeholder="0.00" oninput="calc()">
+              <div class="quick" id="quick"></div>
+              <div class="chg" id="chg"><span>Change</span><span>₱0.00</span></div>
+            </div>
+            <button class="btn ok go" id="goBtn" onclick="checkout()" disabled>Complete Sale</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Inventory -->
+    <section class="page" id="p-inventory">
+      <div class="ph"><div><h1>Real-Time Inventory</h1><p>Stock levels update automatically with every sale.</p></div>
+        <div class="tools"><input class="in search" id="invSearch" placeholder="🔍  Search…" oninput="renderInventory()"><select class="in" id="invCat" style="width:auto" onchange="renderInventory()"></select></div></div>
+      <div class="stats" id="invStats"></div>
+      <div class="tw"><table><thead><tr><th>Product</th><th>Category</th><th class="r">In stock</th><th class="r">Reorder at</th><th>Status</th><th>Expiry</th><th class="r" id="invAct">Actions</th></tr></thead><tbody id="invBody"></tbody></table></div>
+    </section>
+
+    <!-- Low stock -->
+    <section class="page" id="p-low">
+      <div class="ph"><div><h1>Low Stock Monitoring</h1><p>See at a glance which items need restocking.</p></div>
+        <div class="tools"><button class="btn alt" onclick="printRestock()">🖨 Print restock list</button></div></div>
+      <div class="stats" id="lowStats"></div>
+      <div id="lowBox"></div>
+    </section>
+
+    <!-- Products -->
+    <section class="page" id="p-products">
+      <div class="ph"><div><h1>Product Management</h1><p>Add and edit your products, prices, and categories.</p></div>
+        <div class="tools"><input class="in search" id="prSearch" placeholder="🔍  Search…" oninput="renderProducts()"><button class="btn alt" onclick="openCategories()">Categories</button><button class="btn" onclick="openProduct()">+ Add Product</button></div></div>
+      <div class="tw"><table><thead><tr><th>ID</th><th>Product</th><th>Category</th><th>Unit</th><th class="r">Cost</th><th class="r">Price</th><th class="r">Stock</th><th class="r">Actions</th></tr></thead><tbody id="prBody"></tbody></table></div>
+    </section>
+
+    <!-- Sales -->
+    <section class="page" id="p-sales">
+      <div class="ph"><div><h1>Sales Records</h1><p>Look back at past transactions. Click a row to see the items.</p></div>
+        <div class="tools">
+          <button class="btn alt sm" onclick="presetSales('today')">Today</button><button class="btn alt sm" onclick="presetSales('week')">Last 7 days</button><button class="btn alt sm" onclick="presetSales('month')">This month</button>
+          <input class="in" type="date" id="sFrom" style="width:auto"><span>to</span><input class="in" type="date" id="sTo" style="width:auto">
+          <button class="btn sm" onclick="loadSales()">Show</button></div></div>
+      <div id="pendBox"></div>
+      <div class="stats" id="saleStats"></div>
+      <div class="tw"><table><thead><tr><th>Sale no.</th><th>Date &amp; time</th><th>Cashier</th><th class="r">Items</th><th class="r">Discount</th><th class="r">Total</th><th>Payment</th><th>Status</th></tr></thead><tbody id="saleBody"></tbody></table></div>
+    </section>
+
+    <!-- Reports -->
+    <section class="page" id="p-reports">
+      <div class="ph"><div><h1>Reports &amp; Monitoring</h1><p>See how your business is performing.</p></div>
+        <div class="tools">
+          <button class="btn alt sm" onclick="presetRep('today')">Today</button><button class="btn alt sm" onclick="presetRep('week')">Last 7 days</button><button class="btn alt sm" onclick="presetRep('month')">This month</button>
+          <input class="in" type="date" id="rFrom" style="width:auto"><span>to</span><input class="in" type="date" id="rTo" style="width:auto">
+          <button class="btn sm" onclick="loadReport()">Show</button><button class="btn alt sm" onclick="printEl('rptBody')">🖨 Print</button></div></div>
+      <div id="rptBody"></div>
+    </section>
+
+    <!-- Users -->
+    <section class="page" id="p-users">
+      <div class="ph"><div><h1>Users &amp; Access</h1><p>Create staff accounts. Everyone signs in with a username and a PIN.</p></div>
+        <div class="tools"><button class="btn" onclick="openUser()">+ Add User</button></div></div>
+      <div class="card" style="margin-bottom:16px"><b>Roles</b><p class="sub" style="margin:6px 0 0"><b>Owner:</b> full access. <b>Cashier:</b> can make sales, view stock and see their own sales. Cashiers cannot see costs, edit products or stock, void sales, give custom discounts, or open reports.</p></div>
+      <div class="tw"><table><thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Status</th><th class="r">Actions</th></tr></thead><tbody id="usBody"></tbody></table></div>
+    </section>
+  </div>
+</div>
+
+<div class="auth" id="auth"></div>
+<div class="ov" id="ov"><div class="md" id="md"><div class="mh"><h2 id="mTitle"></h2><button onclick="closeModal()" aria-label="Close">×</button></div><div class="mb" id="mBody"></div><div class="mf" id="mFoot"></div></div></div>
+<div class="scrim" id="cscrim" onclick="cartSheet(false)"></div>
+<button class="cartbar" id="cartBar" onclick="cartSheet(true)"><span id="cbInfo"></span><b>View cart</b></button>
+<div class="toast" id="toast"></div>
+<div id="printArea"></div>
+
+<script>
+/* ---------- State & helpers ---------- */
+const S = { products: [], cats: [], cart: [], q: '', cat: 'All', method: 'Cash', store: '', token: '', user: null, vat: 0.12, sp: 0.2, users: [], offline: false, pending: 0, pinMem: '' };
+const isOwner = () => !!S.user && S.user.role === 'Owner';
+const MENU = [
+  { id:'pos', ic:'🛒', t:'POS / Checkout', s:'Make a sale' },
+  { id:'inventory', ic:'📦', t:'Inventory', s:'Live stock levels' },
+  { id:'low', ic:'⚠️', t:'Low Stock', s:'Items to restock' },
+  { id:'products', ic:'💊', t:'Products', s:'Prices & categories', own:1 },
+  { id:'sales', ic:'🧾', t:'Sales Records', s:'Past transactions' },
+  { id:'reports', ic:'📊', t:'Reports', s:'Business overview', own:1 },
+  { id:'users', ic:'🔑', t:'Users & Access', s:'Staff accounts', own:1 }
+];
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const peso = n => '₱' + (+n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const pad = n => ('0' + n).slice(-2);
+const ymd = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+const prod = id => S.products.find(p => p.id === id);
+let cur = 'pos', loads = 0;
+
+async function run(fn, ...args) {
+  const open = ['ping', 'authState', 'login', 'setupOwner'].includes(fn);
+  const quiet = open || fn === 'processSale', inline = fn === 'login' || fn === 'setupOwner';
+  const netErr = () => { const x = new Error('NETWORK'); x.network = true; return x; };
+  if (PWA && S.offline && !open) { if (!quiet) toast('You are offline. This needs an internet connection.', true); throw netErr(); }
+  loads++; $('load').style.display = 'block';
+  try {
+    for (let attempt = 0; ; attempt++) {
+      try {
+        if (!open && PWA && !S.token && S.pinMem) await ensureToken();
+        const r = await api(fn, ...(open ? args : [S.token, ...args]));
+        if (PWA && S.offline) setNet(false);
+        return r;
+      } catch (e) {
+        if (e && e.network) { setNet(true); if (!quiet) toast('You are offline. This needs an internet connection.', true); throw e; }
+        const m = String((e && e.message) || 'Something went wrong').replace(/^Error:\s*/, '');
+        if (m.includes('SESSION_EXPIRED')) {
+          if (!open && PWA && S.pinMem && attempt === 0) { S.token = ''; if (await ensureToken()) continue; }
+          if (S.user) endSession('Your session expired. Please sign in again.');
+        } else if (!inline) toast(m, true);
+        throw e;
+      }
+    }
+  } finally { if (!--loads) $('load').style.display = 'none'; }
+}
+function toast(msg, err) {
+  const t = $('toast'); t.textContent = msg; t.className = 'toast on' + (err ? ' err' : '');
+  clearTimeout(toast.h); toast.h = setTimeout(() => t.className = 'toast', err ? 4500 : 2600);
+}
+function openModal(title, body, foot, wide) {
+  $('mTitle').textContent = title; $('mBody').innerHTML = body; $('mFoot').innerHTML = foot || '';
+  $('md').className = 'md' + (wide ? ' wide' : ''); $('ov').classList.add('on');
+}
+function closeModal() { $('ov').classList.remove('on'); }
+function confirmBox(msg, label, fn) {
+  openModal('Please confirm', '<p style="margin:0;font-size:16px">' + msg + '</p>',
+    '<button class="btn alt" onclick="closeModal()">Cancel</button><button class="btn danger" id="yes">' + label + '</button>');
+  $('yes').onclick = () => { closeModal(); fn(); };
+}
+function printEl(id) { $('printArea').innerHTML = $(id).innerHTML; window.print(); }
+function toggleMenu(o) { $('side').classList.toggle('open', o); $('scrim').classList.toggle('on', o); }
+function stockInfo(p) {
+  if (p.stock < 0) return { t: 'Check count', c: 'red' };
+  if (p.stock <= 0) return { t: 'Out of stock', c: 'red' };
+  if (p.stock <= p.reorder) return { t: 'Low stock', c: 'amber' };
+  return { t: 'OK', c: 'green' };
+}
+function expInfo(p) {
+  if (!p.expiry) return null;
+  const d = Math.ceil((new Date(p.expiry + 'T00:00:00') - new Date().setHours(0, 0, 0, 0)) / 864e5);
+  if (d < 0) return { t: 'Expired', c: 'red', d };
+  if (d <= 90) return { t: 'Expires in ' + d + ' days', c: 'amber', d };
+  return { t: p.expiry, c: 'gray', d };
+}
+const catOptions = (sel, all) => (all ? '<option value="All">All categories</option>' : '') + S.cats.map(c => '<option' + (c === sel ? ' selected' : '') + '>' + esc(c) + '</option>').join('');
+
+/* ---------- Navigation ---------- */
+function buildMenu() {
+  $('menu').innerHTML = MENU.filter(m => !m.own || isOwner()).map(m => '<button class="mi" id="m-' + m.id + '" onclick="go(\'' + m.id + '\')"><span class="ic">' + m.ic + '</span><span>' + m.t + '<small>' + m.s + '</small></span>' + (m.id === 'low' ? '<span class="badge" id="lowBadge" style="display:none"></span>' : '') + '</button>').join('');
+}
+function go(id) {
+  cur = id; toggleMenu(false); cartSheet(false);
+  MENU.forEach(m => { const b = $('m-' + m.id); if (b) b.classList.toggle('on', m.id === id); $('p-' + m.id).classList.toggle('on', m.id === id); });
+  $('topTitle').textContent = MENU.find(m => m.id === id).t;
+  ({ pos: renderPOS, inventory: renderInventory, low: renderLow, products: renderProducts, sales: () => { if (!$('sFrom').value) presetSales('today'); else loadSales(); }, reports: () => { if (!$('rFrom').value) presetRep('week'); else loadReport(); }, users: loadUsers })[id]();
+  document.querySelector('.main').scrollTop = 0; updateBar();
+  if (id === 'pos') $('posSearch').focus();
+}
+function refreshAll() {
+  const low = S.products.filter(p => p.stock <= p.reorder).length;
+  const b = $('lowBadge'); b.style.display = low ? '' : 'none'; b.textContent = low;
+  const fn = { pos: renderPOS, inventory: renderInventory, low: renderLow, products: renderProducts }[cur];
+  if (fn) fn();
+}
+function setProducts(list) { S.products = list; saveCache(); refreshAll(); }
+/* ---------- POS ---------- */
+function renderPOS() {
+  $('posChips').innerHTML = ['All', ...S.cats].map(c => '<button class="chip' + (c === S.cat ? ' on' : '') + '" data-c="' + esc(c) + '">' + esc(c) + '</button>').join('');
+  document.querySelectorAll('#posChips .chip').forEach(b => b.onclick = () => { S.cat = b.dataset.c; renderPOS(); });
+  renderGrid(); renderCart();
+}
+function posList() {
+  const q = $('posSearch').value.trim().toLowerCase();
+  return S.products.filter(p => (S.cat === 'All' || p.category === S.cat) && (!q || (p.name + ' ' + p.generic + ' ' + p.id + ' ' + p.barcode).toLowerCase().includes(q)));
+}
+function renderGrid() {
+  const l = posList();
+  $('posGrid').innerHTML = l.length ? l.map(p => {
+    const s = stockInfo(p);
+    return '<button class="pc" ' + (p.stock <= 0 ? 'disabled' : '') + ' onclick="addCart(\'' + p.id + '\')"><b>' + esc(p.name) + '</b><span class="sub">' + esc(p.generic || p.category) + '</span><span class="tag ' + s.c + '" style="align-self:flex-start">' + (p.stock <= 0 ? 'Out of stock' : p.stock + ' ' + esc(p.unit) + ' left') + '</span><span class="pr">' + peso(p.price) + '</span></button>';
+  }).join('') : '<div class="empty" style="grid-column:1/-1"><b>No products found</b>Try another word, or add the product in the Products menu.</div>';
+}
+function addCart(id) {
+  const p = prod(id), c = S.cart.find(x => x.id === id);
+  if (!p || p.stock <= 0) return;
+  if (c) { if (c.qty >= p.stock) return toast('Only ' + p.stock + ' in stock.', true); c.qty++; } else S.cart.push({ id, qty: 1 });
+  renderCart();
+}
+function chg(id, d) {
+  const c = S.cart.find(x => x.id === id), p = prod(id);
+  if (d > 0 && c.qty >= p.stock) return toast('Only ' + p.stock + ' in stock.', true);
+  c.qty += d; if (c.qty <= 0) S.cart = S.cart.filter(x => x !== c); renderCart();
+}
+function rm(id) { S.cart = S.cart.filter(x => x.id !== id); renderCart(); }
+function clearCart() { S.cart = []; $('cash').value = ''; resetDiscount(); renderCart(); }
+function renderCart() {
+  $('cartItems').innerHTML = S.cart.length ? S.cart.map(c => {
+    const p = prod(c.id);
+    return '<div class="ci"><div><b>' + esc(p.name) + '</b><small>' + peso(p.price) + ' each</small></div><div class="qty"><button onclick="chg(\'' + c.id + '\',-1)" aria-label="Less">−</button><span>' + c.qty + '</span><button onclick="chg(\'' + c.id + '\',1)" aria-label="More">+</button></div><div class="lt">' + peso(p.price * c.qty) + '</div><button class="x" onclick="rm(\'' + c.id + '\')" aria-label="Remove">✕</button></div>';
+  }).join('') : '<div class="empty"><b>Cart is empty</b>Click a product to start a sale.</div>';
+  $('payBtns').innerHTML = ['Cash', 'GCash', 'Card'].map(m => '<button class="' + (S.method === m ? 'on' : '') + '" onclick="S.method=\'' + m + '\';renderCart()">' + m + '</button>').join('');
+  calc();
+}
+function totals() {
+  const type = $('dtype').value || 'None';
+  const sub = S.cart.reduce((a, c) => a + prod(c.id).price * c.qty, 0);
+  let total = sub, disc = 0;
+  if (type === 'Senior Citizen' || type === 'PWD') {
+    total = S.cart.reduce((a, c) => { const p = prod(c.id); return a + c.qty * (p.vatExempt ? p.price : p.price / (1 + S.vat)) * (1 - S.sp); }, 0);
+    total = Math.round(total * 100) / 100; disc = Math.round((sub - total) * 100) / 100;
+  } else if (type === 'Custom') {
+    disc = Math.min(Math.max(+$('disc').value || 0, 0), sub); total = sub - disc;
+  }
+  return { sub, disc, total, type };
+}
+function buildDtype() {
+  $('dtype').innerHTML = '<option value="None">No discount</option><option>Senior Citizen</option><option>PWD</option>' + (isOwner() ? '<option value="Custom">Custom amount</option>' : '');
+}
+function onDtype() {
+  const t = $('dtype').value;
+  $('disc').style.display = t === 'Custom' ? '' : 'none';
+  $('dSen').style.display = (t === 'Senior Citizen' || t === 'PWD') ? '' : 'none';
+  calc();
+}
+function resetDiscount() { $('dtype').value = 'None'; $('disc').value = ''; $('dName').value = ''; $('dId').value = ''; onDtype(); }
+function calc() {
+  const t = totals(), cash = +$('cash').value || 0, isCash = S.method === 'Cash';
+  $('tSub').textContent = peso(t.sub); $('tTotal').textContent = peso(t.total);
+  $('discRow').style.display = t.disc > 0 ? '' : 'none'; $('tDisc').textContent = '-' + peso(t.disc);
+  const needId = (t.type === 'Senior Citizen' || t.type === 'PWD') && (!$('dName').value.trim() || !$('dId').value.trim());
+  $('cashBox').style.display = isCash ? '' : 'none';
+  $('quick').innerHTML = '<button onclick="setCash(' + t.total + ')">Exact</button>' + [50, 100, 200, 500, 1000].map(n => '<button onclick="setCash(' + n + ')">' + n + '</button>').join('');
+  const diff = cash - t.total, c = $('chg');
+  c.className = 'chg' + (diff < 0 && cash > 0 ? ' bad' : '');
+  c.innerHTML = diff < 0 ? '<span>Still needed</span><span>' + peso(-diff) + '</span>' : '<span>Change</span><span>' + peso(diff) + '</span>';
+  $('goBtn').disabled = !S.cart.length || needId || (isCash && cash < t.total);
+  updateBar();
+}
+function updateBar() {
+  const n = S.cart.reduce((s, c) => s + c.qty, 0);
+  $('cartBar').classList.toggle('on', n > 0 && cur === 'pos');
+  if (n) $('cbInfo').textContent = '🛒 ' + n + ' item' + (n > 1 ? 's' : '') + ' · ' + peso(totals().total);
+}
+function cartSheet(o) { $('cartPanel').classList.toggle('open', o); $('cscrim').classList.toggle('on', o); }
+function setCash(n) { $('cash').value = n; calc(); }
+async function checkout() {
+  const t = totals();
+  const payload = { cid: newCid(), soldAt: nowStr(), cashier: S.user.name,
+    items: S.cart.map(c => ({ id: c.id, qty: c.qty, price: prod(c.id).price })),
+    discountType: t.type, discount: t.disc, discountName: $('dName').value, discountId: $('dId').value,
+    method: S.method, cash: S.method === 'Cash' ? +$('cash').value : t.total };
+  try {
+    if (PWA && S.offline) { const x = new Error('NETWORK'); x.network = true; throw x; }
+    const r = await run('processSale', payload);
+    finishSale(r.sale, r.products);
+  } catch (e) {
+    if (PWA && e && e.network) await sellOffline(payload, t);
+  }
+}
+function finishSale(sale, products) {
+  S.cart = []; $('cash').value = ''; resetDiscount();
+  cartSheet(false); setProducts(products); showReceipt(sale); toast('Sale completed ✔');
+}
+function receiptHtml(s) {
+  return '<div class="rc"><div style="text-align:center"><b>' + esc(S.store) + '</b><br>Sales Receipt<br>' + esc(s.id) + '<br>' + esc(s.date) + (s.cashier ? '<br>Cashier: ' + esc(s.cashier) : '') + (s.pending ? '<br><b>(Saved offline - will sync)</b>' : '') + '</div><hr>' +
+    s.items.map(i => '<div>' + esc(i.name) + '</div><div class="tl"><span>' + i.qty + ' × ' + peso(i.price) + '</span><span>' + peso(i.total) + '</span></div>').join('') + '<hr>' +
+    '<div class="tl"><span>Subtotal</span><span>' + peso(s.subtotal) + '</span></div>' +
+    (s.discount ? '<div class="tl"><span>' + (s.discountType ? esc(s.discountType) + ' discount' : 'Discount') + '</span><span>-' + peso(s.discount) + '</span></div>' : '') + (s.discountRef ? '<div>Customer: ' + esc(s.discountRef) + '</div>' : '') +
+    '<div class="tl"><b>TOTAL</b><b>' + peso(s.total) + '</b></div><div class="tl"><span>' + esc(s.method) + '</span><span>' + peso(s.cash) + '</span></div>' +
+    (s.method === 'Cash' ? '<div class="tl"><span>Change</span><span>' + peso(s.change) + '</span></div>' : '') + '<hr><div style="text-align:center">Thank you for your purchase!</div></div>';
+}
+function showReceipt(s) {
+  openModal('Sale completed ✔', '<div id="rcpt">' + receiptHtml(s) + '</div>',
+    '<button class="btn alt" onclick="printEl(\'rcpt\')">🖨 Print receipt</button><button class="btn ok" onclick="closeModal();$(\'posSearch\').focus()">New sale</button>');
+}
+
+/* ---------- Inventory ---------- */
+function renderInventory() {
+  $('invAct').style.display = isOwner() ? '' : 'none';
+  const q = $('invSearch').value.trim().toLowerCase(), cat = $('invCat').value || 'All';
+  if (!$('invCat').options.length || $('invCat').options.length !== S.cats.length + 1) $('invCat').innerHTML = catOptions(cat, true);
+  const l = S.products.filter(p => (cat === 'All' || p.category === cat) && (!q || (p.name + ' ' + p.generic + ' ' + p.id + ' ' + p.barcode).toLowerCase().includes(q)));
+  const units = S.products.reduce((s, p) => s + p.stock, 0), val = S.products.reduce((s, p) => s + p.stock * p.cost, 0), low = S.products.filter(p => p.stock <= p.reorder).length;
+  $('invStats').innerHTML = '<div class="stat"><span>Products</span><b>' + S.products.length + '</b></div><div class="stat"><span>Total units in stock</span><b>' + units.toLocaleString() + '</b></div>' + (isOwner() ? '<div class="stat green"><span>Stock value (at cost)</span><b>' + peso(val) + '</b></div>' : '') + '<div class="stat ' + (low ? 'red' : '') + '"><span>Need restocking</span><b>' + low + '</b></div>';
+  $('invBody').innerHTML = l.length ? l.map(p => {
+    const s = stockInfo(p), e = expInfo(p);
+    return '<tr><td><b>' + esc(p.name) + '</b><div class="sub">' + esc(p.generic) + '</div></td><td>' + esc(p.category) + '</td><td class="r"><b>' + p.stock + '</b> <span class="sub">' + esc(p.unit) + '</span></td><td class="r">' + p.reorder + '</td><td><span class="tag ' + s.c + '">' + s.t + '</span></td><td>' + (e ? '<span class="tag ' + e.c + '">' + esc(e.t) + '</span>' : '<span class="sub">—</span>') + '</td>' + (isOwner() ? '<td class="r"><button class="btn sm ok" onclick="openStock(\'' + p.id + '\',\'add\')">+ Restock</button> <button class="btn sm alt" onclick="openStock(\'' + p.id + '\',\'set\')">Adjust</button></td>' : '') + '</tr>';
+  }).join('') : '<tr><td colspan="7"><div class="empty"><b>No products yet</b>Go to Products and click “Add Product”.</div></td></tr>';
+}
+function openStock(id, mode) {
+  const p = prod(id);
+  openModal('Update stock — ' + p.name,
+    '<p style="margin-top:0">Current stock: <b>' + p.stock + ' ' + esc(p.unit) + '</b></p>' +
+    '<div class="fg"><label class="f">What happened?</label><select class="in" id="sMode"><option value="add">Add stock (restock / new delivery)</option><option value="remove">Remove stock (damaged / expired)</option><option value="set">Set exact count (after counting)</option></select></div>' +
+    '<div class="fg"><label class="f">Quantity</label><input class="in" id="sQty" type="number" min="0" step="1" placeholder="0"></div>' +
+    '<div class="fg"><label class="f">Note (optional)</label><input class="in" id="sNote" placeholder="e.g. delivery from supplier"></div>',
+    '<button class="btn alt" onclick="closeModal()">Cancel</button><button class="btn" id="sSave">Save</button>');
+  $('sMode').value = mode; $('sQty').focus();
+  $('sSave').onclick = async () => {
+    try { const r = await run('adjustStock', { id, mode: $('sMode').value, qty: $('sQty').value, note: $('sNote').value }); closeModal(); setProducts(r); toast('Stock updated ✔'); } catch (e) {}
+  };
+}
+
+/* ---------- Low stock ---------- */
+function renderLow() {
+  const low = S.products.filter(p => p.stock <= p.reorder).sort((a, b) => a.stock - b.stock);
+  const out = low.filter(p => p.stock <= 0).length, exp = S.products.filter(p => { const e = expInfo(p); return e && e.d <= 90; });
+  $('lowStats').innerHTML = '<div class="stat red"><span>Out of stock</span><b>' + out + '</b></div><div class="stat amber"><span>Running low</span><b>' + (low.length - out) + '</b></div><div class="stat amber"><span>Expired / expiring in 90 days</span><b>' + exp.length + '</b></div>';
+  let h = '';
+  h += low.length ? '<div class="tw" id="restockList"><table><thead><tr><th>Product</th><th>Category</th><th class="r">In stock</th><th class="r">Reorder at</th><th class="r">Suggested order</th><th>Status</th><th class="r"></th></tr></thead><tbody>' + low.map(p => {
+    const s = stockInfo(p), sug = Math.max(p.reorder * 2 - p.stock, 1);
+    return '<tr><td><b>' + esc(p.name) + '</b></td><td>' + esc(p.category) + '</td><td class="r"><b>' + p.stock + '</b></td><td class="r">' + p.reorder + '</td><td class="r"><b>' + sug + ' ' + esc(p.unit) + '</b></td><td><span class="tag ' + s.c + '">' + s.t + '</span></td><td class="r">' + (isOwner() ? '<button class="btn sm ok" onclick="openStock(\'' + p.id + '\',\'add\')">+ Restock</button>' : '') + '</td></tr>';
+  }).join('') + '</tbody></table></div>' : '<div class="card empty"><b>All good! 🎉</b>Nothing needs restocking right now.</div>';
+  if (exp.length) h += '<h3 style="margin:22px 0 10px;color:var(--c5)">Check these expiry dates</h3><div class="tw"><table><thead><tr><th>Product</th><th class="r">In stock</th><th>Expiry</th></tr></thead><tbody>' + exp.sort((a, b) => a.expiry.localeCompare(b.expiry)).map(p => { const e = expInfo(p); return '<tr><td><b>' + esc(p.name) + '</b></td><td class="r">' + p.stock + '</td><td><span class="tag ' + e.c + '">' + esc(e.t) + '</span> <span class="sub">' + p.expiry + '</span></td></tr>'; }).join('') + '</tbody></table></div>';
+  $('lowBox').innerHTML = h;
+}
+function printRestock() {
+  const low = S.products.filter(p => p.stock <= p.reorder);
+  if (!low.length) return toast('Nothing to print — no low stock items.');
+  $('printArea').innerHTML = '<h2>Restock list — ' + esc(S.store) + '</h2><p>' + ymd(new Date()) + '</p><table border="1" cellpadding="6" style="border-collapse:collapse;width:100%"><tr><th align="left">Product</th><th>In stock</th><th>Order qty</th></tr>' + low.map(p => '<tr><td>' + esc(p.name) + '</td><td align="center">' + p.stock + '</td><td align="center">' + Math.max(p.reorder * 2 - p.stock, 1) + ' ' + esc(p.unit) + '</td></tr>').join('') + '</table>';
+  window.print();
+}
+
+/* ---------- Products ---------- */
+function renderProducts() {
+  const q = $('prSearch').value.trim().toLowerCase();
+  const l = S.products.filter(p => !q || (p.name + ' ' + p.generic + ' ' + p.category + ' ' + p.id + ' ' + p.barcode).toLowerCase().includes(q));
+  $('prBody').innerHTML = l.length ? l.map(p => '<tr><td class="sub">' + p.id + '</td><td><b>' + esc(p.name) + '</b><div class="sub">' + esc(p.generic) + '</div>' + (p.barcode ? '<div class="sub">Barcode: ' + esc(p.barcode) + '</div>' : '') + '</td><td>' + esc(p.category) + '</td><td>' + esc(p.unit) + '</td><td class="r">' + peso(p.cost) + '</td><td class="r"><b>' + peso(p.price) + '</b></td><td class="r">' + p.stock + '</td><td class="r"><button class="btn sm alt" onclick="openProduct(\'' + p.id + '\')">Edit</button> <button class="btn sm danger" onclick="delProduct(\'' + p.id + '\')">Delete</button></td></tr>').join('')
+    : '<tr><td colspan="8"><div class="empty"><b>No products found</b>Click “+ Add Product” to add your first item.</div></td></tr>';
+}
+function openProduct(id) {
+  const p = id ? prod(id) : { name: '', generic: '', category: S.cats[0], unit: 'tablet', cost: '', price: '', stock: '', reorder: 10, expiry: '', barcode: '', vatExempt: false };
+  openModal(id ? 'Edit product' : 'Add product',
+    '<div class="fg"><label class="f">Product name *</label><input class="in" id="fName" value="' + esc(p.name) + '" placeholder="e.g. Biogesic 500mg"></div>' +
+    '<div class="fg"><label class="f">Generic name</label><input class="in" id="fGen" value="' + esc(p.generic) + '" placeholder="e.g. Paracetamol"></div>' +
+    '<div class="fg"><label class="f">Barcode (optional)</label><input class="in" id="fBar" value="' + esc(p.barcode) + '" placeholder="Scan or type the barcode"></div>' +
+    '<div class="row2"><div class="fg"><label class="f">Category</label><select class="in" id="fCat">' + catOptions(p.category) + '</select></div>' +
+    '<div class="fg"><label class="f">Unit</label><input class="in" id="fUnit" list="units" value="' + esc(p.unit) + '"><datalist id="units"><option>tablet<option>capsule<option>bottle<option>box<option>sachet<option>tube<option>pc</datalist></div></div>' +
+    '<div class="row2"><div class="fg"><label class="f">Cost (₱)</label><input class="in" id="fCost" type="number" min="0" step="0.01" value="' + p.cost + '"><div class="hint">What you pay the supplier</div></div>' +
+    '<div class="fg"><label class="f">Selling price (₱) *</label><input class="in" id="fPrice" type="number" min="0" step="0.01" value="' + p.price + '"></div></div>' +
+    '<div class="row2">' + (id ? '' : '<div class="fg"><label class="f">Starting stock</label><input class="in" id="fStock" type="number" min="0" step="1" value="' + p.stock + '"></div>') +
+    '<div class="fg"><label class="f">Reorder level</label><input class="in" id="fRe" type="number" min="0" step="1" value="' + p.reorder + '"><div class="hint">Warn me when stock reaches this number</div></div></div>' +
+    '<div class="fg"><label style="display:flex;gap:8px;align-items:center;font-weight:700"><input type="checkbox" id="fVat"' + (p.vatExempt ? ' checked' : '') + ' style="width:20px;height:20px"> VAT-exempt product</label><div class="hint">Tick this if the product is exempt from VAT. It is used when computing Senior Citizen and PWD discounts.</div></div>' +
+    '<div class="fg"><label class="f">Expiry date (optional)</label><input class="in" id="fExp" type="date" value="' + esc(p.expiry) + '">' + (id ? '<div class="hint">To change stock, use Inventory → Adjust.</div>' : '') + '</div>',
+    '<button class="btn alt" onclick="closeModal()">Cancel</button><button class="btn" id="pSave">Save product</button>');
+  $('fName').focus();
+  $('pSave').onclick = async () => {
+    try {
+      const r = await run('saveProduct', { id: id || '', name: $('fName').value, generic: $('fGen').value, category: $('fCat').value, unit: $('fUnit').value, cost: $('fCost').value, price: $('fPrice').value, stock: id ? 0 : $('fStock').value, reorder: $('fRe').value, expiry: $('fExp').value, barcode: $('fBar').value, vatExempt: $('fVat').checked });
+      closeModal(); setProducts(r); toast('Product saved ✔');
+    } catch (e) {}
+  };
+}
+function delProduct(id) {
+  const p = prod(id);
+  confirmBox('Delete <b>' + esc(p.name) + '</b>? Past sales records will be kept.', 'Delete', async () => { try { setProducts(await run('deleteProduct', id)); toast('Product deleted'); } catch (e) {} });
+}
+function openCategories() {
+  const draw = () => {
+    $('mBody').innerHTML = '<div style="display:flex;gap:8px;margin-bottom:14px"><input class="in" id="nCat" placeholder="New category name"><button class="btn" id="aCat">Add</button></div>' +
+      S.cats.map(c => '<div class="tl" style="padding:8px 0;border-bottom:1px solid var(--line)"><span>' + esc(c) + ' <span class="sub">(' + S.products.filter(p => p.category === c).length + ')</span></span><button class="btn sm danger" data-c="' + esc(c) + '">Delete</button></div>').join('');
+    $('aCat').onclick = async () => { try { S.cats = await run('addCategory', $('nCat').value); draw(); toast('Category added ✔'); } catch (e) {} };
+    $('mBody').querySelectorAll('[data-c]').forEach(b => b.onclick = async () => { try { S.cats = await run('deleteCategory', b.dataset.c); draw(); } catch (e) {} });
+  };
+  openModal('Categories', '', '<button class="btn" onclick="closeModal();$(\'invCat\').innerHTML=\'\';refreshAll()">Done</button>'); draw();
+}
+
+/* ---------- Sales records ---------- */
+function range(kind) {
+  const t = new Date(), f = new Date();
+  if (kind === 'week') f.setDate(t.getDate() - 6); else if (kind === 'month') f.setDate(1);
+  return [ymd(f), ymd(t)];
+}
+function presetSales(k) { [$('sFrom').value, $('sTo').value] = range(k); loadSales(); }
+async function loadSales() {
+  renderPending();
+  if (PWA && S.offline) {
+    $('saleStats').innerHTML = '';
+    $('saleBody').innerHTML = '<tr><td colspan="8"><div class="empty"><b>You are offline</b>Sales history needs an internet connection. Sales made offline are listed above and sync automatically.</div></td></tr>';
+    return;
+  }
+  try {
+    const l = await run('getSales', $('sFrom').value, $('sTo').value), ok = l.filter(s => s.status !== 'Void');
+    S.sales = l;
+    const rev = ok.reduce((s, x) => s + x.total, 0);
+    $('saleStats').innerHTML = '<div class="stat green"><span>Total sales</span><b>' + peso(rev) + '</b></div><div class="stat"><span>Transactions</span><b>' + ok.length + '</b></div><div class="stat"><span>Items sold</span><b>' + ok.reduce((s, x) => s + x.units, 0) + '</b></div><div class="stat"><span>Average per sale</span><b>' + peso(ok.length ? rev / ok.length : 0) + '</b></div>';
+    $('saleBody').innerHTML = l.length ? l.map(s => '<tr class="click" onclick="openSale(\'' + s.id + '\')"><td><b>' + esc(s.id) + '</b></td><td>' + esc(s.date) + '</td><td>' + esc(s.cashier || '—') + '</td><td class="r">' + s.units + '</td><td class="r">' + (s.discount ? peso(s.discount) + (s.discountType ? '<div class="sub">' + esc(s.discountType) + '</div>' : '') : '—') + '</td><td class="r"><b>' + peso(s.total) + '</b></td><td>' + esc(s.method) + '</td><td><span class="tag ' + (s.status === 'Void' ? 'gray' : 'green') + '">' + esc(s.status) + '</span></td></tr>').join('')
+      : '<tr><td colspan="8"><div class="empty"><b>No sales in this period</b>Try a different date range.</div></td></tr>';
+  } catch (e) {}
+}
+async function openSale(id) {
+  const s = S.sales.find(x => x.id === id);
+  try {
+    const items = await run('getSaleDetails', id);
+    const sale = { id: s.id, date: s.date, items, subtotal: s.subtotal, discount: s.discount, discountType: s.discountType, discountRef: s.discountRef, cashier: s.cashier, total: s.total, method: s.method, cash: s.cash, change: s.change };
+    openModal('Sale ' + id, '<div id="rcpt2">' + receiptHtml(sale) + '</div>' + (s.status === 'Void' ? '<p><span class="tag gray">This sale was voided</span></p>' : ''),
+      '<button class="btn alt" onclick="printEl(\'rcpt2\')">🖨 Print</button>' + (s.status === 'Void' || !isOwner() ? '' : '<button class="btn danger" id="vd">Void this sale</button>') + '<button class="btn" onclick="closeModal()">Close</button>');
+    if ($('vd')) $('vd').onclick = () => confirmBox('Void sale <b>' + esc(id) + '</b>? The items will be returned to your stock.', 'Void sale', async () => { try { setProducts(await run('voidSale', id)); toast('Sale voided — stock returned'); loadSales(); } catch (e) {} });
+  } catch (e) {}
+}
+
+/* ---------- Reports ---------- */
+function presetRep(k) { [$('rFrom').value, $('rTo').value] = range(k); loadReport(); }
+async function loadReport() {
+  try {
+    const from = $('rFrom').value, to = $('rTo').value, r = await run('getReports', from, to);
+    const map = {}; r.daily.forEach(d => map[d.d] = d);
+    const days = []; for (let d = new Date(from + 'T00:00:00'), e = new Date(to + 'T00:00:00'); d <= e && days.length < 62; d.setDate(d.getDate() + 1)) days.push(ymd(d));
+    const max = Math.max(1, ...days.map(d => map[d] ? map[d].sales : 0)), few = days.length <= 10;
+    const maxQ = Math.max(1, ...r.top.map(t => t.qty)), maxC = Math.max(1, ...r.cats.map(c => c.revenue));
+    const hb = (n, v, m, txt) => '<div class="hbar"><div><span>' + esc(n) + '</span><b>' + txt + '</b></div><i><u style="width:' + Math.max(3, v / m * 100) + '%"></u></i></div>';
+    $('rptBody').innerHTML =
+      '<div class="stats"><div class="stat green"><span>Total sales</span><b>' + peso(r.revenue) + '</b></div><div class="stat"><span>Estimated profit</span><b>' + peso(r.profit) + '</b></div><div class="stat"><span>Transactions</span><b>' + r.count + '</b></div><div class="stat"><span>Items sold</span><b>' + r.units + '</b></div><div class="stat"><span>Average per sale</span><b>' + peso(r.avg) + '</b></div></div>' +
+      '<div class="card"><h3>Sales per day</h3>' + (r.count ? '<div class="bars">' + days.map(d => { const v = map[d] ? map[d].sales : 0; return '<div class="bar" title="' + d + ': ' + peso(v) + '">' + (few && v ? '<em>' + Math.round(v).toLocaleString() + '</em>' : '') + '<i style="height:' + (v / max * 80) + '%"></i><span>' + d.slice(5) + '</span></div>'; }).join('') + '</div>' : '<div class="empty"><b>No sales in this period</b>Pick another date range.</div>') + '</div>' +
+      '<div class="cols"><div class="card"><h3>Best-selling products</h3>' + (r.top.length ? r.top.map(t => hb(t.name, t.qty, maxQ, t.qty + ' sold · ' + peso(t.revenue))).join('') : '<div class="sub">No data yet.</div>') + '</div>' +
+      '<div class="card"><h3>Sales by category</h3>' + (r.cats.length ? r.cats.map(c => hb(c.name, c.revenue, maxC, peso(c.revenue))).join('') : '<div class="sub">No data yet.</div>') + '</div>' +
+      '<div class="card"><h3>Payment methods</h3>' + (r.pay.length ? '<table style="min-width:0">' + r.pay.map(p => '<tr><td><b>' + esc(p.method) + '</b></td><td class="r">' + p.count + ' sales</td><td class="r"><b>' + peso(p.total) + '</b></td></tr>').join('') + '</table>' : '<div class="sub">No data yet.</div>') + '</div>' +
+      '<div class="card"><h3>Inventory value (right now)</h3><div class="tl"><span>At cost</span><b>' + peso(r.invCost) + '</b></div><div class="tl"><span>At selling price</span><b>' + peso(r.invRetail) + '</b></div><div class="tl"><span>Possible profit if all sold</span><b>' + peso(r.invRetail - r.invCost) + '</b></div></div></div>';
+  } catch (e) {}
+}
+
+/* ---------- Online / offline (installable app) ---------- */
+const API_URL_DEFAULT = '';   // <-- paste your Apps Script web app link (ending in /exec) here before publishing the app
+const PWA = typeof google === 'undefined' || !google.script;
+const apiUrl = () => { if (API_URL_DEFAULT) return API_URL_DEFAULT; try { return localStorage.getItem('pe_api') || ''; } catch (e) { return ''; } };
+const safe = p => Promise.resolve(p).catch(() => null);
+const newCid = () => 'C' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const nowStr = () => { const d = new Date(); return ymd(d) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()); };
+
+/* Small wrapper around the browser's built-in database (IndexedDB) */
+const DB = {
+  open() { return this._p || (this._p = new Promise((ok, bad) => { const r = indexedDB.open('pharmease', 1); r.onupgradeneeded = () => { r.result.createObjectStore('kv'); r.result.createObjectStore('outbox', { keyPath: 'cid' }); }; r.onsuccess = () => ok(r.result); r.onerror = () => bad(r.error); })); },
+  async tx(store, mode, fn) { const d = await this.open(); return new Promise((ok, bad) => { const t = d.transaction(store, mode), req = fn(t.objectStore(store)); t.oncomplete = () => ok(req && req.result); t.onerror = t.onabort = () => bad(t.error); }); },
+  get(k) { return this.tx('kv', 'readonly', s => s.get(k)); },
+  set(k, v) { return this.tx('kv', 'readwrite', s => s.put(v, k)); },
+  outAll() { return this.tx('outbox', 'readonly', s => s.getAll()); },
+  outPut(o) { return this.tx('outbox', 'readwrite', s => s.put(o)); },
+  outDel(c) { return this.tx('outbox', 'readwrite', s => s.delete(c)); }
+};
+
+/* One door to the server: Apps Script's own channel when opened inside Apps Script, plain web requests when installed as an app */
+function api(fn, ...args) {
+  if (!PWA) return new Promise((ok, bad) => google.script.run.withSuccessHandler(ok).withFailureHandler(bad)[fn](...args));
+  const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 30000);
+  return fetch(apiUrl(), { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ fn, args }), signal: ctl.signal })
+    .then(r => r.text(), () => { const x = new Error('NETWORK'); x.network = true; throw x; })
+    .then(t => {
+      let j; try { j = JSON.parse(t); } catch (e) { throw new Error('The server sent an unexpected reply. Please check the web app deployment settings.'); }
+      if (!j.ok) throw new Error(j.error);
+      return j.data;
+    })
+    .finally(() => clearTimeout(timer));
+}
+
+/* Connection status pill */
+function setNet(off) { S.offline = !!off; updateNet(); }
+function updateNet() {
+  const n = S.pending || 0;
+  const t = S.offline ? '● Offline' + (n ? ' · ' + n + ' to sync' : '') : (n ? '● Online · ' + n + ' to sync' : '● Online');
+  ['netSide', 'netTop'].forEach(id => {
+    const el = $(id); if (!el) return;
+    el.style.display = PWA && S.user ? '' : 'none';
+    el.textContent = t; el.className = 'net ' + (S.offline ? 'off' : (n ? 'pend' : 'on'));
+    el.onclick = S.offline ? probe : (n ? () => syncOutbox() : null);
+  });
+}
+async function probe() { try { await run('ping'); await syncOutbox(true); } catch (e) {} }
+window.addEventListener('online', () => { if (PWA) probe(); });
+window.addEventListener('offline', () => { if (PWA) setNet(true); });
+setInterval(() => { if (PWA && S.user && (S.offline || S.pending)) probe(); }, 30000);
+
+/* Keep a copy of the data on this device */
+function saveCache() { if (!PWA || !S.user) return; safe(DB.set('init:' + S.user.role, { store: S.store, vat: S.vat, sp: S.sp, products: S.products, categories: S.cats })); }
+async function cachedInit(role) {
+  let d = await safe(DB.get('init:' + role));
+  if (!d && role !== 'Owner') { d = await safe(DB.get('init:Owner')); if (d) d = { ...d, products: d.products.map(p => ({ ...p, cost: 0 })) }; }
+  return d;
+}
+async function reapplyPending() {
+  if (!PWA) return;
+  const q = (await safe(DB.outAll())) || [];
+  S.pending = q.length;
+  q.forEach(x => x.payload.items.forEach(i => { const p = prod(i.id); if (p) p.stock -= i.qty; }));
+  updateNet();
+}
+
+/* Offline sign-in: this device remembers a scrambled (hashed) copy of each PIN that signed in online */
+async function sha(x) { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(x)); return [...new Uint8Array(b)].map(v => v.toString(16).padStart(2, '0')).join(''); }
+async function saveCred(u, pin, user) {
+  try {
+    const salt = [...crypto.getRandomValues(new Uint8Array(8))].join('-');
+    await DB.set('cred:' + u, { username: u, name: user.name, role: user.role, salt, hash: await sha(salt + '|' + u + '|' + pin) });
+  } catch (e) {}
+}
+async function offlineLogin(u, pin) {
+  const err = m => { $('aErr').textContent = m; $('lPin').value = ''; };
+  const c = await safe(DB.get('cred:' + u));
+  if (!c) return err('You are offline. This device must sign in online at least once before it can be used offline.');
+  let ok = false; try { ok = (await sha(c.salt + '|' + u + '|' + pin)) === c.hash; } catch (e) {}
+  if (!ok) return err('Wrong username or PIN.');
+  const init = await cachedInit(c.role);
+  if (!init) return err('No saved data on this device yet. Please sign in online once.');
+  S.pinMem = pin; S.token = ''; setNet(true);
+  applyInit({ ...init, user: { username: u, name: c.name, role: c.role } });
+  await enterApp();
+}
+
+/* Selling while offline: the sale is saved on this device and sent to the server later */
+async function sellOffline(payload, t) {
+  const sen = t.type === 'Senior Citizen' || t.type === 'PWD';
+  const sale = { id: 'PENDING-' + payload.cid.slice(-5).toUpperCase(), date: payload.soldAt, subtotal: t.sub, discount: t.disc,
+    discountType: t.type === 'None' ? '' : t.type, discountRef: sen ? payload.discountName.trim() + ' / ID ' + payload.discountId.trim() : '',
+    total: t.total, method: payload.method, cash: payload.cash, change: Math.max(0, payload.cash - t.total), cashier: payload.cashier, pending: true,
+    items: S.cart.map(c => { const p = prod(c.id); return { name: p.name, qty: c.qty, price: p.price, total: p.price * c.qty }; }) };
+  try { await DB.outPut({ cid: payload.cid, soldAt: payload.soldAt, payload, receipt: sale }); }
+  catch (e) { toast('Could not save this sale on the device. Please write it down and try again.', true); return; }
+  S.cart.forEach(c => { prod(c.id).stock -= c.qty; });
+  S.pending++; saveCache(); setNet(true);
+  S.cart = []; $('cash').value = ''; resetDiscount(); cartSheet(false); refreshAll(); showReceipt(sale);
+  toast('Saved on this device — it will sync automatically ✔');
+}
+
+let syncing = false;
+async function ensureToken() {
+  if (S.token) return true;
+  if (!(S.pinMem && S.user)) return false;
+  try { const r = await api('login', S.user.username, S.pinMem); S.token = r.token; try { sessionStorage.setItem('pe_token', r.token); } catch (e) {} return true; }
+  catch (e) { return false; }
+}
+async function syncOutbox(silent) {
+  if (!PWA || syncing || !S.user) return;
+  let q = (await safe(DB.outAll())) || [];
+  S.pending = q.length; updateNet();
+  if (!q.length) return;
+  syncing = true; let done = 0;
+  try {
+    if (!(await ensureToken())) { if (!silent) toast('Please sign in again to sync your sales.', true); return; }
+    q.sort((a, b) => a.soldAt.localeCompare(b.soldAt));
+    for (const sale of q) {
+      if (sale.failed) continue;
+      const send = () => api('processSale', S.token, { ...sale.payload, offline: true });
+      try { await send(); await DB.outDel(sale.cid); done++; }
+      catch (e) {
+        if (e.network) { setNet(true); break; }
+        const m = String(e.message || '').replace(/^Error:\s*/, '');
+        if (m.includes('SESSION_EXPIRED')) {
+          S.token = '';
+          if (await ensureToken()) { try { await send(); await DB.outDel(sale.cid); done++; continue; } catch (e2) {} }
+          break;
+        }
+        sale.failed = m; await DB.outPut(sale);
+      }
+    }
+  } finally { syncing = false; }
+  q = (await safe(DB.outAll())) || []; S.pending = q.length;
+  if (done) {
+    toast(done + ' offline sale' + (done > 1 ? 's' : '') + ' synced ✔');
+    try { applyInit(await run('getInitData')); await reapplyPending(); refreshAll(); } catch (e) {}
+  }
+  updateNet(); renderPending();
+}
+async function renderPending() {
+  const box = $('pendBox'); if (!box) return;
+  if (!PWA) { box.innerHTML = ''; return; }
+  const q = ((await safe(DB.outAll())) || []).sort((a, b) => b.soldAt.localeCompare(a.soldAt));
+  S.pending = q.length; updateNet();
+  box.innerHTML = q.length ? '<div class="card" style="margin-bottom:16px;border-color:var(--c2)"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><b>⏳ ' + q.length + ' sale' + (q.length > 1 ? 's' : '') + ' waiting to sync</b>' +
+    (S.offline ? '<span class="sub">They will sync when you are back online</span>' : '<button class="btn sm" onclick="syncOutbox()">Sync now</button>') + '</div>' +
+    q.map(x => '<div class="tl" style="padding:8px 0;border-top:1px solid var(--line);gap:10px"><span><a href="#" onclick="viewPending(\'' + x.cid + '\');return false">' + esc(x.soldAt) + '</a> · <b>' + peso(x.receipt.total) + '</b>' +
+      (x.failed ? '<div class="sub" style="color:var(--red)">Problem: ' + esc(x.failed) + '</div>' : '') + '</span>' +
+      (x.failed ? '<span><button class="btn sm alt" onclick="retryPending(\'' + x.cid + '\')">Retry</button> <button class="btn sm danger" onclick="discardPending(\'' + x.cid + '\')">Discard</button></span>' : '') + '</div>').join('') + '</div>' : '';
+}
+async function viewPending(cid) { const x = ((await safe(DB.outAll())) || []).find(o => o.cid === cid); if (x) showReceipt(x.receipt); }
+async function retryPending(cid) { const x = ((await safe(DB.outAll())) || []).find(o => o.cid === cid); if (x) { x.failed = null; await DB.outPut(x); syncOutbox(); } }
+function discardPending(cid) { confirmBox('Discard this offline sale? It will <b>not</b> be added to your sales records.', 'Discard', async () => { await safe(DB.outDel(cid)); renderPending(); }); }
+
+/* Install button + service worker (lets the app open with no internet) */
+let deferredInstall = null;
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredInstall = e; const b = $('installBtn'); if (b) b.style.display = ''; });
+window.addEventListener('appinstalled', () => { const b = $('installBtn'); if (b) b.style.display = 'none'; });
+function installApp() { if (!deferredInstall) return; deferredInstall.prompt(); deferredInstall = null; $('installBtn').style.display = 'none'; }
+if (PWA && 'serviceWorker' in navigator && /^https?:$/.test(location.protocol)) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+
+function showApiSetup() {
+  showAuth('<h2>Connect to your server</h2><p class="sub">Paste the web app link from your Apps Script deployment. You only need to do this once on this device.</p><div class="fg"><input class="in" id="apiIn" placeholder="https://script.google.com/macros/s/…/exec"></div><div class="err" id="aErr"></div><button class="btn go" style="margin-top:0" id="apiGo">Save and continue</button>');
+  $('apiGo').onclick = () => {
+    const v = $('apiIn').value.trim();
+    if (!/^https:\/\/script\.google\.com\/.+\/exec$/.test(v)) { $('aErr').textContent = 'That does not look like a web app link ending in /exec.'; return; }
+    try { localStorage.setItem('pe_api', v); } catch (e) {}
+    start();
+  };
+}
+async function start() {
+  if (PWA && !apiUrl()) { showApiSetup(); return; }
+  let tok = ''; try { tok = sessionStorage.getItem('pe_token') || ''; } catch (e) {}
+  if (tok) { try { await startSession(tok); return; } catch (e) { S.token = ''; } }
+  try { const a = await run('authState'); if (a.needsSetup) showSetup(); else showLogin(); }
+  catch (e) {
+    if (PWA && e && e.network) { showLogin(); $('aErr').textContent = 'You are offline. Sign in with your usual username and PIN to keep working offline.'; }
+    else showAuth('<div class="err">Could not load the app. Please refresh the page.</div>');
+  }
+}
+
+/* ---------- Mobile: label table cells so rows can show as cards ---------- */
+let lblBusy = false;
+function labelTables() {
+  document.querySelectorAll('.tw table').forEach(t => {
+    const h = [...t.querySelectorAll('thead th')].map(x => x.textContent.trim());
+    t.querySelectorAll('tbody tr').forEach(tr => [...tr.children].forEach((td, i) => {
+      if (td.dataset.w || td.colSpan > 1) return;
+      td.dataset.w = 1; const l = h[i] || ''; td.dataset.label = l;
+      if (!l || l === 'Actions') td.classList.add('act'); else td.innerHTML = '<span class="cv">' + td.innerHTML + '</span>';
+    }));
+  });
+}
+new MutationObserver(() => { if (lblBusy) return; lblBusy = true; requestAnimationFrame(() => { lblBusy = false; labelTables(); }); })
+  .observe(document.querySelector('.main'), { childList: true, subtree: true });
+
+/* ---------- Users & access ---------- */
+async function loadUsers() { try { S.users = await run('listUsers'); renderUsers(); } catch (e) {} }
+function renderUsers() {
+  $('usBody').innerHTML = S.users.map(u => '<tr><td><b>' + esc(u.name) + '</b></td><td>' + esc(u.username) + '</td><td>' + esc(u.role) + '</td><td><span class="tag ' + (u.active ? 'green' : 'gray') + '">' + (u.active ? 'Active' : 'Disabled') + '</span></td><td class="r"><button class="btn sm alt" onclick="openUser(\'' + esc(u.username) + '\')">Edit</button></td></tr>').join('');
+}
+function openUser(username) {
+  const u = username ? S.users.find(x => x.username === username) : { name: '', username: '', role: 'Cashier', active: true };
+  const isNew = !username;
+  openModal(isNew ? 'Add user' : 'Edit user',
+    '<div class="fg"><label class="f">Full name *</label><input class="in" id="uName" value="' + esc(u.name) + '"></div>' +
+    '<div class="row2"><div class="fg"><label class="f">Username *</label><input class="in" id="uUser" value="' + esc(u.username) + '"' + (isNew ? '' : ' disabled') + ' autocapitalize="none"><div class="hint">Letters and numbers, no spaces</div></div>' +
+    '<div class="fg"><label class="f">Role</label><select class="in" id="uRole"><option' + (u.role === 'Cashier' ? ' selected' : '') + '>Cashier</option><option' + (u.role === 'Owner' ? ' selected' : '') + '>Owner</option></select></div></div>' +
+    '<div class="fg"><label class="f">' + (isNew ? 'PIN *' : 'New PIN') + '</label><input class="in" id="uPin" type="password" inputmode="numeric" maxlength="8" autocomplete="new-password" placeholder="4 to 8 digits"><div class="hint">' + (isNew ? 'The user signs in with this PIN.' : 'Leave blank to keep the current PIN.') + '</div></div>' +
+    (isNew ? '' : '<label style="display:flex;gap:8px;align-items:center;font-weight:700"><input type="checkbox" id="uActive"' + (u.active ? ' checked' : '') + ' style="width:20px;height:20px"> Account is active</label>'),
+    '<button class="btn alt" onclick="closeModal()">Cancel</button><button class="btn" id="uSave">Save user</button>');
+  $('uSave').onclick = async () => {
+    try {
+      S.users = await run('saveUser', { isNew, name: $('uName').value, username: $('uUser').value, role: $('uRole').value, pin: $('uPin').value, active: isNew ? true : $('uActive').checked });
+      closeModal(); renderUsers(); toast('User saved ✔');
+    } catch (e) {}
+  };
+}
+
+/* ---------- Sign in / session ---------- */
+const COPY = '<div class="acopy">© 2026 PharmEase. All rights reserved.</div>';
+function showAuth(html) { $('auth').innerHTML = '<div class="acard"><div class="logo">💊 PharmEase</div><div class="tag2">Pharmacy Inventory &amp; Sales</div>' + html + COPY + '</div>'; $('auth').classList.add('on'); }
+function showLogin() {
+  showAuth('<h2>Sign in</h2><div class="fg" style="margin-top:14px"><label class="f" for="lUser">Username</label><input class="in" id="lUser" autocapitalize="none" autocomplete="username"></div>' +
+    '<div class="fg"><label class="f" for="lPin">PIN</label><input class="in" id="lPin" type="password" inputmode="numeric" maxlength="8" autocomplete="current-password"></div>' +
+    '<div class="err" id="aErr"></div><button class="btn go" style="margin-top:0" id="lGo">Sign in</button>');
+  $('lGo').onclick = doLogin;
+  ['lUser', 'lPin'].forEach(id => $(id).addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); }));
+  $('lUser').focus();
+}
+function showSetup() {
+  showAuth('<h2>Welcome!</h2><p class="sub" style="margin:0 0 14px">Create the owner account to get started. You can add cashiers later.</p>' +
+    '<div class="fg"><label class="f" for="sName">Your full name</label><input class="in" id="sName"></div>' +
+    '<div class="fg"><label class="f" for="sUser">Username</label><input class="in" id="sUser" autocapitalize="none" autocomplete="username"></div>' +
+    '<div class="row2"><div class="fg"><label class="f" for="sPin">PIN (4-8 digits)</label><input class="in" id="sPin" type="password" inputmode="numeric" maxlength="8" autocomplete="new-password"></div>' +
+    '<div class="fg"><label class="f" for="sPin2">Confirm PIN</label><input class="in" id="sPin2" type="password" inputmode="numeric" maxlength="8" autocomplete="new-password"></div></div>' +
+    '<div class="err" id="aErr"></div><button class="btn go" style="margin-top:0" id="sGo">Create account</button>');
+  $('sGo').onclick = doSetup; $('sName').focus();
+}
+async function doLogin() {
+  $('aErr').textContent = '';
+  const u = $('lUser').value.trim().toLowerCase(), pin = $('lPin').value;
+  if (PWA && (S.offline || !navigator.onLine)) return offlineLogin(u, pin);
+  try {
+    const r = await run('login', u, pin);
+    S.pinMem = PWA ? pin : '';
+    await startSession(r.token);
+    if (PWA) saveCred(u, pin, S.user);
+  } catch (e) {
+    if (PWA && e && e.network) return offlineLogin(u, pin);
+    $('aErr').textContent = String((e && e.message) || 'Could not sign in.').replace(/^Error:\s*/, ''); $('lPin').value = '';
+  }
+}
+async function doSetup() {
+  $('aErr').textContent = '';
+  if ($('sPin').value !== $('sPin2').value) { $('aErr').textContent = 'The two PINs do not match.'; return; }
+  try { const r = await run('setupOwner', { name: $('sName').value, username: $('sUser').value, pin: $('sPin').value }); await startSession(r.token); }
+  catch (e) { $('aErr').textContent = String((e && e.message) || 'Could not create the account.').replace(/^Error:\s*/, ''); }
+}
+async function startSession(token) {
+  S.token = token; try { sessionStorage.setItem('pe_token', token); } catch (e) {}
+  const d = await run('getInitData');
+  applyInit(d); await enterApp();
+}
+function applyInit(d) {
+  S.user = d.user; S.store = d.store; S.vat = d.vat; S.sp = d.sp; S.products = d.products; S.cats = d.categories;
+  saveCache();
+}
+async function enterApp() {
+  $('auth').classList.remove('on'); $('auth').innerHTML = '';
+  $('whoami').innerHTML = esc(S.user.name) + '<small>' + esc(S.user.role) + '</small>';
+  buildMenu(); buildDtype(); onDtype();
+  $('invCat').innerHTML = catOptions('All', true);
+  await reapplyPending();
+  go('pos'); refreshAll(); updateNet();
+  if (PWA && !S.offline) syncOutbox(true);
+}
+function endSession(msg) {
+  S.token = ''; S.user = null; S.cart = []; S.products = []; S.users = []; S.pinMem = '';
+  try { sessionStorage.removeItem('pe_token'); } catch (e) {}
+  closeModal(); cartSheet(false); toggleMenu(false); $('cartBar').classList.remove('on');
+  updateNet(); showLogin(); if (msg) toast(msg, true);
+}
+function logout() { const t = S.token; endSession(); if (t) api('logout', t).catch(() => {}); }
+/* ---------- Start ---------- */
+window.onload = async () => {
+  $('posSearch').addEventListener('input', renderGrid);
+  $('posSearch').addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    const q = $('posSearch').value.trim(); if (!q) return;
+    const hit = S.products.find(p => p.barcode && p.barcode === q) || posList()[0];
+    if (hit) { addCart(hit.id); $('posSearch').value = ''; renderGrid(); }
+    else toast('No product found for "' + q + '".', true);
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeModal();
+    const tag = (document.activeElement || {}).tagName;
+    if (cur === 'pos' && S.user && /^[0-9a-z]$/i.test(e.key) && !e.ctrlKey && !e.metaKey && !e.altKey && !/INPUT|SELECT|TEXTAREA/.test(tag) && !$('ov').classList.contains('on')) $('posSearch').focus();
+  });
+  S.offline = PWA && !navigator.onLine;
+  start();
+};
+</script>
+</body>
+</html>
