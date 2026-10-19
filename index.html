@@ -930,10 +930,10 @@ import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWith
 import { initializeFirestore, getFirestore, persistentLocalCache, persistentMultipleTabManager, doc, getDoc, getDocs, setDoc, updateDoc, collection, query, where, orderBy, onSnapshot, writeBatch, increment, waitForPendingWrites } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 
 /* =====================================================================
-   1) FIREBASE CONFIGURATION
+   1) PASTE YOUR FIREBASE SETTINGS HERE (Firebase console → Project settings → Your apps → Config)
    ===================================================================== */
 const firebaseConfig = {
-  apiKey: "AIzaSyCAF976Vr1WKGIRntaAbQfZ4XWL79U9k-s",
+ apiKey: "AIzaSyCAF976Vr1WKGIRntaAbQfZ4XWL79U9k-s",
   authDomain: "pharmacy-pos-6b3b0.firebaseapp.com",
   projectId: "pharmacy-pos-6b3b0",
   storageBucket: "pharmacy-pos-6b3b0.firebasestorage.app",
@@ -1206,6 +1206,7 @@ if (configured) {
   });
 
   /* ---------- sales ---------- */
+  /* One small summary record per day keeps reports cheap: they read a handful of records instead of every sale. */
   function summary(b, day, sg, s, lines) {
     const items = {};
     lines.forEach(l => { items[l.id] = { name: l.name, category: l.category || 'Others', qty: increment(sg * l.qty), revenue: increment(sg * l.total) }; });
@@ -1213,6 +1214,7 @@ if (configured) {
       byMethod: { [s.method]: { total: increment(sg * s.total), count: increment(sg) } }, items }, { merge: true });
   }
 
+  /** o: { rno, items:[{id,qty}], discountType, discount, discountName, discountId, method, cash } */
   B.processSale = wrap(async o => {
     const user = S.user; if (!user) fail('Please sign in again.');
     if (!o.items || !o.items.length) fail('The cart is empty.');
@@ -1255,7 +1257,7 @@ if (configured) {
     lines.forEach(l => b.update(ref('products', l.id), { stock: increment(-l.q) }));
     summary(b, day, 1, sale, items);
     fire(b.commit(), 'This sale');
-    lines.forEach(l => { l.p.stock -= l.q; });
+    lines.forEach(l => { l.p.stock -= l.q; });            // show the new stock straight away
     return { sale: { id, date: soldAt, subtotal: sub, discount: disc, discountType: sale.discountType, discountRef: who, total, method, cash, change, cashier: user.name,
       items: items.map(i => ({ name: i.name, qty: i.qty, price: i.price, total: i.total })) }, products: S.products };
   });
@@ -1315,3 +1317,6 @@ if (configured) {
       invCost: S.products.reduce((s, p) => s + p.stock * p.cost, 0), invRetail: S.products.reduce((s, p) => s + p.stock * p.price, 0) };
   });
 }
+</script>
+</body>
+</html>
