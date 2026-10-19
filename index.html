@@ -271,7 +271,7 @@ tr.click{cursor:pointer}
   <aside class="side" id="side">
     <div class="brand"><b>💊 PharmEase</b><small>Pharmacy Inventory &amp; Sales</small></div>
     <nav class="menu" id="menu"></nav>
-    <div class="sfoot"><div class="net" id="netSide"></div><div id="whoami"></div><button class="signout" id="installBtn" style="display:none" onclick="installApp()">⬇ Install app</button><button class="signout" onclick="logout()">Sign out</button><div class="copy">© 2026 PharmEase. All rights reserved.</div></div>
+    <div class="sfoot"><div class="net" id="netSide"></div><div id="whoami"></div><button class="signout" id="installBtn" style="display:none" onclick="installApp()">⬇ Install app</button><button class="signout" onclick="openPin()">Change PIN</button><button class="signout" onclick="logout()">Sign out</button><div class="copy">© 2026 PharmEase. All rights reserved.</div></div>
   </aside>
 
   <div class="main">
@@ -332,7 +332,7 @@ tr.click{cursor:pointer}
     <!-- Products -->
     <section class="page" id="p-products">
       <div class="ph"><div><h1>Product Management</h1><p>Add and edit your products, prices, and categories.</p></div>
-        <div class="tools"><input class="in search" id="prSearch" placeholder="🔍  Search…" oninput="renderProducts()"><button class="btn alt" onclick="openCategories()">Categories</button><button class="btn" onclick="openProduct()">+ Add Product</button></div></div>
+        <div class="tools"><input class="in search" id="prSearch" placeholder="🔍  Search…" oninput="renderProducts()"><button class="btn alt" onclick="openCsv()">Import / Export</button><button class="btn alt" onclick="openCategories()">Categories</button><button class="btn" onclick="openProduct()">+ Add Product</button></div></div>
       <div class="tw"><table><thead><tr><th>ID</th><th>Product</th><th>Category</th><th>Unit</th><th class="r">Cost</th><th class="r">Price</th><th class="r">Stock</th><th class="r">Actions</th></tr></thead><tbody id="prBody"></tbody></table></div>
     </section>
 
@@ -342,8 +342,7 @@ tr.click{cursor:pointer}
         <div class="tools">
           <button class="btn alt sm" onclick="presetSales('today')">Today</button><button class="btn alt sm" onclick="presetSales('week')">Last 7 days</button><button class="btn alt sm" onclick="presetSales('month')">This month</button>
           <input class="in" type="date" id="sFrom" style="width:auto"><span>to</span><input class="in" type="date" id="sTo" style="width:auto">
-          <button class="btn sm" onclick="loadSales()">Show</button></div></div>
-      <div id="pendBox"></div>
+          <button class="btn sm" onclick="loadSales()">Show</button><button class="btn alt sm" id="sExp" onclick="exportSales()">⬇ Export</button></div></div>
       <div class="stats" id="saleStats"></div>
       <div class="tw"><table><thead><tr><th>Sale no.</th><th>Date &amp; time</th><th>Cashier</th><th class="r">Items</th><th class="r">Discount</th><th class="r">Total</th><th>Payment</th><th>Status</th></tr></thead><tbody id="saleBody"></tbody></table></div>
     </section>
@@ -362,6 +361,7 @@ tr.click{cursor:pointer}
     <section class="page" id="p-users">
       <div class="ph"><div><h1>Users &amp; Access</h1><p>Create staff accounts. Everyone signs in with a username and a PIN.</p></div>
         <div class="tools"><button class="btn" onclick="openUser()">+ Add User</button></div></div>
+      <div class="card" style="margin-bottom:16px"><label class="f" for="storeIn">Pharmacy name on receipts</label><div style="display:flex;gap:8px"><input class="in" id="storeIn" maxlength="60"><button class="btn" onclick="saveStore()">Save</button></div></div>
       <div class="card" style="margin-bottom:16px"><b>Roles</b><p class="sub" style="margin:6px 0 0"><b>Owner:</b> full access. <b>Cashier:</b> can make sales, view stock and see their own sales. Cashiers cannot see costs, edit products or stock, void sales, give custom discounts, or open reports.</p></div>
       <div class="tw"><table><thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Status</th><th class="r">Actions</th></tr></thead><tbody id="usBody"></tbody></table></div>
     </section>
@@ -377,7 +377,7 @@ tr.click{cursor:pointer}
 
 <script>
 /* ---------- State & helpers ---------- */
-const S = { products: [], cats: [], cart: [], q: '', cat: 'All', method: 'Cash', store: '', token: '', user: null, vat: 0.12, sp: 0.2, users: [], offline: false, pending: 0, pinMem: '' };
+const S = { products: [], cats: [], cart: [], q: '', cat: 'All', method: 'Cash', store: '', token: '', user: null, vat: 0.12, sp: 0.2, users: [], offline: false, pending: 0, syncing: false };
 const isOwner = () => !!S.user && S.user.role === 'Owner';
 const MENU = [
   { id:'pos', ic:'🛒', t:'POS / Checkout', s:'Make a sale' },
@@ -397,29 +397,11 @@ const prod = id => S.products.find(p => p.id === id);
 let cur = 'pos', loads = 0;
 
 async function run(fn, ...args) {
-  const open = ['ping', 'authState', 'login', 'setupOwner'].includes(fn);
-  const quiet = open || fn === 'processSale', inline = fn === 'login' || fn === 'setupOwner';
-  const netErr = () => { const x = new Error('NETWORK'); x.network = true; return x; };
-  if (PWA && S.offline && !open) { if (!quiet) toast('You are offline. This needs an internet connection.', true); throw netErr(); }
+  const quiet = ['login', 'setupOwner', 'getInitData', 'authState'].includes(fn);
   loads++; $('load').style.display = 'block';
-  try {
-    for (let attempt = 0; ; attempt++) {
-      try {
-        if (!open && PWA && !S.token && S.pinMem) await ensureToken();
-        const r = await api(fn, ...(open ? args : [S.token, ...args]));
-        if (PWA && S.offline) setNet(false);
-        return r;
-      } catch (e) {
-        if (e && e.network) { setNet(true); if (!quiet) toast('You are offline. This needs an internet connection.', true); throw e; }
-        const m = String((e && e.message) || 'Something went wrong').replace(/^Error:\s*/, '');
-        if (m.includes('SESSION_EXPIRED')) {
-          if (!open && PWA && S.pinMem && attempt === 0) { S.token = ''; if (await ensureToken()) continue; }
-          if (S.user) endSession('Your session expired. Please sign in again.');
-        } else if (!inline) toast(m, true);
-        throw e;
-      }
-    }
-  } finally { if (!--loads) $('load').style.display = 'none'; }
+  try { return await Backend[fn](...args); }
+  catch (e) { if (!quiet) toast(String((e && e.message) || 'Something went wrong').replace(/^Error:\s*/, ''), true); throw e; }
+  finally { if (!--loads) $('load').style.display = 'none'; }
 }
 function toast(msg, err) {
   const t = $('toast'); t.textContent = msg; t.className = 'toast on' + (err ? ' err' : '');
@@ -475,7 +457,7 @@ function refreshAll() {
   const fn = { pos: renderPOS, inventory: renderInventory, low: renderLow, products: renderProducts }[cur];
   if (fn) fn();
 }
-function setProducts(list) { S.products = list; saveCache(); refreshAll(); }
+function setProducts(list) { S.products = list; refreshAll(); }
 /* ---------- POS ---------- */
 function renderPOS() {
   $('posChips').innerHTML = ['All', ...S.cats].map(c => '<button class="chip' + (c === S.cat ? ' on' : '') + '" data-c="' + esc(c) + '">' + esc(c) + '</button>').join('');
@@ -572,17 +554,9 @@ function cartSheet(o) { $('cartPanel').classList.toggle('open', o); $('cscrim').
 function setCash(n) { $('cash').value = n; calc(); }
 async function checkout() {
   const t = totals();
-  const payload = { cid: newCid(), rno: newRno(), soldAt: nowStr(), cashier: S.user.name,
-    items: S.cart.map(c => ({ id: c.id, qty: c.qty, price: prod(c.id).price })),
-    discountType: t.type, discount: t.disc, discountName: $('dName').value, discountId: $('dId').value,
-    method: S.method, cash: S.method === 'Cash' ? +$('cash').value : t.total };
-  try {
-    if (PWA && S.offline) { const x = new Error('NETWORK'); x.network = true; throw x; }
-    const r = await run('processSale', payload);
-    finishSale(r.sale, r.products);
-  } catch (e) {
-    if (PWA && e && e.network) await sellOffline(payload, t);
-  }
+  const payload = { rno: newRno(), items: S.cart.map(c => ({ id: c.id, qty: c.qty })), discountType: t.type, discount: t.disc,
+    discountName: $('dName').value, discountId: $('dId').value, method: S.method, cash: S.method === 'Cash' ? +$('cash').value : t.total };
+  try { const r = await run('processSale', payload); finishSale(r.sale, r.products); } catch (e) {}
 }
 function finishSale(sale, products) {
   S.cart = []; $('cash').value = ''; resetDiscount();
@@ -700,12 +674,6 @@ function range(kind) {
 }
 function presetSales(k) { [$('sFrom').value, $('sTo').value] = range(k); loadSales(); }
 async function loadSales() {
-  renderPending();
-  if (PWA && S.offline) {
-    $('saleStats').innerHTML = '';
-    $('saleBody').innerHTML = '<tr><td colspan="8"><div class="empty"><b>You are offline</b>Sales history needs an internet connection. Sales made offline are listed above and sync automatically.</div></td></tr>';
-    return;
-  }
   try {
     const l = await run('getSales', $('sFrom').value, $('sTo').value), ok = l.filter(s => s.status !== 'Void');
     S.sales = l;
@@ -746,188 +714,106 @@ async function loadReport() {
   } catch (e) {}
 }
 
-/* ---------- Online / offline (installable app) ---------- */
-const API_URL_DEFAULT = '';   // <-- paste your Apps Script web app link (ending in /exec) here before publishing the app
-const PWA = typeof google === 'undefined' || !google.script;
-const apiUrl = () => { if (API_URL_DEFAULT) return API_URL_DEFAULT; try { return localStorage.getItem('pe_api') || ''; } catch (e) { return ''; } };
-const safe = p => Promise.resolve(p).catch(() => null);
-const newRno = () => 'S-' + ymd(new Date()).replace(/-/g, '') + '-L' + Math.random().toString(36).slice(2, 6).toUpperCase().padEnd(4, '0');
-const newCid = () => 'C' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+/* ---------- Connection, install, start-up ---------- */
+const newRno = () => 'S-' + ymd(new Date()).replace(/-/g, '') + '-' + Math.random().toString(36).slice(2, 7).toUpperCase().padEnd(5, '0');
 const nowStr = () => { const d = new Date(); return ymd(d) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()); };
 
-/* Small wrapper around the browser's built-in database (IndexedDB) */
-const DB = {
-  open() { return this._p || (this._p = new Promise((ok, bad) => { const r = indexedDB.open('pharmease', 1); r.onupgradeneeded = () => { r.result.createObjectStore('kv'); r.result.createObjectStore('outbox', { keyPath: 'cid' }); }; r.onsuccess = () => ok(r.result); r.onerror = () => bad(r.error); })); },
-  async tx(store, mode, fn) { const d = await this.open(); return new Promise((ok, bad) => { const t = d.transaction(store, mode), req = fn(t.objectStore(store)); t.oncomplete = () => ok(req && req.result); t.onerror = t.onabort = () => bad(t.error); }); },
-  get(k) { return this.tx('kv', 'readonly', s => s.get(k)); },
-  set(k, v) { return this.tx('kv', 'readwrite', s => s.put(v, k)); },
-  outAll() { return this.tx('outbox', 'readonly', s => s.getAll()); },
-  outPut(o) { return this.tx('outbox', 'readwrite', s => s.put(o)); },
-  outDel(c) { return this.tx('outbox', 'readwrite', s => s.delete(c)); }
-};
-
-/* One door to the server: Apps Script's own channel when opened inside Apps Script, plain web requests when installed as an app */
-function api(fn, ...args) {
-  if (!PWA) return new Promise((ok, bad) => google.script.run.withSuccessHandler(ok).withFailureHandler(bad)[fn](...args));
-  const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 30000);
-  return fetch(apiUrl(), { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ fn, args }), signal: ctl.signal })
-    .then(r => r.text(), () => { const x = new Error('NETWORK'); x.network = true; throw x; })
-    .then(t => {
-      let j; try { j = JSON.parse(t); } catch (e) { throw new Error('The server sent an unexpected reply. Please check the web app deployment settings.'); }
-      if (!j.ok) throw new Error(j.error);
-      return j.data;
-    })
-    .finally(() => clearTimeout(timer));
-}
-
-/* Connection status pill */
 function setNet(off) { S.offline = !!off; updateNet(); }
 function updateNet() {
-  const n = S.pending || 0;
-  const t = S.offline ? '● Offline' + (n ? ' · ' + n + ' to sync' : '') : (n ? '● Online · ' + n + ' to sync' : '● Online');
+  const busy = S.pending > 0 || S.syncing;
+  const t = S.offline ? '● Offline' + (S.pending ? ' · ' + S.pending + ' to sync' : '') : (busy ? '● Online · syncing…' : '● Online');
   ['netSide', 'netTop'].forEach(id => {
     const el = $(id); if (!el) return;
-    el.style.display = PWA && S.user ? '' : 'none';
-    el.textContent = t; el.className = 'net ' + (S.offline ? 'off' : (n ? 'pend' : 'on'));
-    el.onclick = S.offline ? probe : (n ? () => syncOutbox() : null);
+    el.style.display = S.user ? '' : 'none';
+    el.textContent = t; el.className = 'net ' + (S.offline ? 'off' : (busy ? 'pend' : 'on'));
   });
 }
-async function probe() { try { await run('ping'); await syncOutbox(true); } catch (e) {} }
-window.addEventListener('online', () => { if (PWA) probe(); });
-window.addEventListener('offline', () => { if (PWA) setNet(true); });
-setInterval(() => { if (PWA && S.user && (S.offline || S.pending)) probe(); }, 30000);
+window.addEventListener('online', () => setNet(false));
+window.addEventListener('offline', () => setNet(true));
 
-/* Keep a copy of the data on this device */
-function saveCache() { if (!PWA || !S.user) return; safe(DB.set('init:' + S.user.role, { store: S.store, vat: S.vat, sp: S.sp, products: S.products, categories: S.cats })); }
-async function cachedInit(role) {
-  let d = await safe(DB.get('init:' + role));
-  if (!d && role !== 'Owner') { d = await safe(DB.get('init:Owner')); if (d) d = { ...d, products: d.products.map(p => ({ ...p, cost: 0 })) }; }
-  return d;
-}
-async function reapplyPending() {
-  if (!PWA) return;
-  const q = (await safe(DB.outAll())) || [];
-  S.pending = q.length;
-  q.forEach(x => x.payload.items.forEach(i => { const p = prod(i.id); if (p) p.stock -= i.qty; }));
-  updateNet();
-}
-
-/* Offline sign-in: this device remembers a scrambled (hashed) copy of each PIN that signed in online */
-async function sha(x) { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(x)); return [...new Uint8Array(b)].map(v => v.toString(16).padStart(2, '0')).join(''); }
-async function saveCred(u, pin, user) {
-  try {
-    const salt = [...crypto.getRandomValues(new Uint8Array(8))].join('-');
-    await DB.set('cred:' + u, { username: u, name: user.name, role: user.role, salt, hash: await sha(salt + '|' + u + '|' + pin) });
-  } catch (e) {}
-}
-async function offlineLogin(u, pin) {
-  const err = m => { $('aErr').textContent = m; $('lPin').value = ''; };
-  const c = await safe(DB.get('cred:' + u));
-  if (!c) return err('You are offline. This device must sign in online at least once before it can be used offline.');
-  let ok = false; try { ok = (await sha(c.salt + '|' + u + '|' + pin)) === c.hash; } catch (e) {}
-  if (!ok) return err('Wrong username or PIN.');
-  const init = await cachedInit(c.role);
-  if (!init) return err('No saved data on this device yet. Please sign in online once.');
-  S.pinMem = pin; S.token = ''; setNet(true);
-  applyInit({ ...init, user: { username: u, name: c.name, role: c.role } });
-  await enterApp();
-}
-
-/* Selling while offline: the sale is saved on this device and sent to the server later */
-async function sellOffline(payload, t) {
-  const sen = t.type === 'Senior Citizen' || t.type === 'PWD';
-  const sale = { id: payload.rno, date: payload.soldAt, subtotal: t.sub, discount: t.disc,
-    discountType: t.type === 'None' ? '' : t.type, discountRef: sen ? payload.discountName.trim() + ' / ID ' + payload.discountId.trim() : '',
-    total: t.total, method: payload.method, cash: payload.cash, change: Math.max(0, payload.cash - t.total), cashier: payload.cashier,
-    items: S.cart.map(c => { const p = prod(c.id); return { name: p.name, qty: c.qty, price: p.price, total: p.price * c.qty }; }) };
-  try { await DB.outPut({ cid: payload.cid, soldAt: payload.soldAt, payload, receipt: sale }); }
-  catch (e) { toast('Could not save this sale on the device. Please write it down and try again.', true); return; }
-  S.cart.forEach(c => { prod(c.id).stock -= c.qty; });
-  S.pending++; saveCache(); setNet(true);
-  S.cart = []; $('cash').value = ''; resetDiscount(); cartSheet(false); refreshAll(); showReceipt(sale);
-  toast('Saved on this device — it will sync automatically ✔');
-}
-
-let syncing = false;
-async function ensureToken() {
-  if (S.token) return true;
-  if (!(S.pinMem && S.user)) return false;
-  try { const r = await api('login', S.user.username, S.pinMem); S.token = r.token; try { sessionStorage.setItem('pe_token', r.token); } catch (e) {} return true; }
-  catch (e) { return false; }
-}
-async function syncOutbox(silent) {
-  if (!PWA || syncing || !S.user) return;
-  let q = (await safe(DB.outAll())) || [];
-  S.pending = q.length; updateNet();
-  if (!q.length) return;
-  syncing = true; let done = 0;
-  try {
-    if (!(await ensureToken())) { if (!silent) toast('Please sign in again to sync your sales.', true); return; }
-    q.sort((a, b) => a.soldAt.localeCompare(b.soldAt));
-    for (const sale of q) {
-      if (sale.failed) continue;
-      const send = () => api('processSale', S.token, { ...sale.payload, offline: true });
-      try { await send(); await DB.outDel(sale.cid); done++; }
-      catch (e) {
-        if (e.network) { setNet(true); break; }
-        const m = String(e.message || '').replace(/^Error:\s*/, '');
-        if (m.includes('SESSION_EXPIRED')) {
-          S.token = '';
-          if (await ensureToken()) { try { await send(); await DB.outDel(sale.cid); done++; continue; } catch (e2) {} }
-          break;
-        }
-        sale.failed = m; await DB.outPut(sale);
-      }
-    }
-  } finally { syncing = false; }
-  q = (await safe(DB.outAll())) || []; S.pending = q.length;
-  if (done) {
-    toast(done + ' offline sale' + (done > 1 ? 's' : '') + ' synced ✔');
-    try { applyInit(await run('getInitData')); await reapplyPending(); refreshAll(); } catch (e) {}
-  }
-  updateNet(); renderPending();
-}
-async function renderPending() {
-  const box = $('pendBox'); if (!box) return;
-  if (!PWA) { box.innerHTML = ''; return; }
-  const q = ((await safe(DB.outAll())) || []).sort((a, b) => b.soldAt.localeCompare(a.soldAt));
-  S.pending = q.length; updateNet();
-  box.innerHTML = q.length ? '<div class="card" style="margin-bottom:16px;border-color:var(--c2)"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><b>⏳ ' + q.length + ' sale' + (q.length > 1 ? 's' : '') + ' waiting to sync</b>' +
-    (S.offline ? '<span class="sub">They will sync when you are back online</span>' : '<button class="btn sm" onclick="syncOutbox()">Sync now</button>') + '</div>' +
-    q.map(x => '<div class="tl" style="padding:8px 0;border-top:1px solid var(--line);gap:10px"><span><a href="#" onclick="viewPending(\'' + x.cid + '\');return false">' + esc(x.soldAt) + '</a> · <b>' + peso(x.receipt.total) + '</b>' +
-      (x.failed ? '<div class="sub" style="color:var(--red)">Problem: ' + esc(x.failed) + '</div>' : '') + '</span>' +
-      (x.failed ? '<span><button class="btn sm alt" onclick="retryPending(\'' + x.cid + '\')">Retry</button> <button class="btn sm danger" onclick="discardPending(\'' + x.cid + '\')">Discard</button></span>' : '') + '</div>').join('') + '</div>' : '';
-}
-async function viewPending(cid) { const x = ((await safe(DB.outAll())) || []).find(o => o.cid === cid); if (x) showReceipt(x.receipt); }
-async function retryPending(cid) { const x = ((await safe(DB.outAll())) || []).find(o => o.cid === cid); if (x) { x.failed = null; await DB.outPut(x); syncOutbox(); } }
-function discardPending(cid) { confirmBox('Discard this offline sale? It will <b>not</b> be added to your sales records.', 'Discard', async () => { await safe(DB.outDel(cid)); renderPending(); }); }
-
-/* Install button + service worker (lets the app open with no internet) */
 let deferredInstall = null;
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredInstall = e; const b = $('installBtn'); if (b) b.style.display = ''; });
 window.addEventListener('appinstalled', () => { const b = $('installBtn'); if (b) b.style.display = 'none'; });
 function installApp() { if (!deferredInstall) return; deferredInstall.prompt(); deferredInstall = null; $('installBtn').style.display = 'none'; }
-if (PWA && 'serviceWorker' in navigator && /^https?:$/.test(location.protocol)) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
 
-function showApiSetup() {
-  showAuth('<h2>Connect to your server</h2><p class="sub">Paste the web app link from your Apps Script deployment. You only need to do this once on this device.</p><div class="fg"><input class="in" id="apiIn" placeholder="https://script.google.com/macros/s/…/exec"></div><div class="err" id="aErr"></div><button class="btn go" style="margin-top:0" id="apiGo">Save and continue</button>');
-  $('apiGo').onclick = () => {
-    const v = $('apiIn').value.trim();
-    if (!/^https:\/\/script\.google\.com\/.+\/exec$/.test(v)) { $('aErr').textContent = 'That does not look like a web app link ending in /exec.'; return; }
-    try { localStorage.setItem('pe_api', v); } catch (e) {}
-    start();
-  };
+function showFirebaseSetup() {
+  showAuth('<h2>Almost there</h2><p class="sub">This app is not connected to your Firebase project yet. Open <b>index.html</b>, find <b>firebaseConfig</b> near the bottom, and paste in the settings from the Firebase console. Then reload this page.</p>');
 }
 async function start() {
-  if (PWA && !apiUrl()) { showApiSetup(); return; }
-  let tok = ''; try { tok = sessionStorage.getItem('pe_token') || ''; } catch (e) {}
-  if (tok) { try { await startSession(tok); return; } catch (e) { S.token = ''; } }
+  if (!window.FB_READY) { showFirebaseSetup(); return; }
+  try { await startSession(); return; } catch (e) {}
   try { const a = await run('authState'); if (a.needsSetup) showSetup(); else showLogin(); }
-  catch (e) {
-    if (PWA && e && e.network) { showLogin(); $('aErr').textContent = 'You are offline. Sign in with your usual username and PIN to keep working offline.'; }
-    else showAuth('<div class="err">Could not load the app. Please refresh the page.</div>');
-  }
+  catch (e) { showLogin(); $('aErr').textContent = 'You are offline. A device must sign in online once before it can be used offline.'; }
 }
+
+/* ---------- CSV import / export ---------- */
+function parseCsv(t) {
+  t = t.replace(/^\uFEFF/, ''); const rows = []; let r = [], f = '', q = false;
+  const push = () => { r.push(f); f = ''; if (r.some(x => x.trim() !== '')) rows.push(r); r = []; };
+  for (let i = 0; i < t.length; i++) {
+    const c = t[i];
+    if (q) { if (c === '"') { if (t[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += c; }
+    else if (c === '"') q = true;
+    else if (c === ',') { r.push(f); f = ''; }
+    else if (c === '\n' || c === '\r') { if (c === '\r' && t[i + 1] === '\n') i++; push(); }
+    else f += c;
+  }
+  if (f !== '' || r.length) push();
+  return rows;
+}
+function downloadCsv(name, rows) {
+  const csv = rows.map(r => r.map(v => { v = String(v == null ? '' : v); return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }).join(',')).join('\r\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = name; document.body.appendChild(a); a.click(); a.remove();
+}
+const CSV_HEAD = ['name', 'generic', 'category', 'unit', 'cost', 'price', 'stock', 'reorder', 'expiry', 'barcode', 'vat_exempt'];
+function downloadTemplate() { downloadCsv('pharmease-products-template.csv', [CSV_HEAD, ['Biogesic 500mg', 'Paracetamol', 'Pain & Fever', 'tablet', '2.50', '5.00', '200', '50', '2027-12-31', '4800000000000', 'no']]); }
+function exportProducts() {
+  downloadCsv('pharmease-products-' + ymd(new Date()) + '.csv', [CSV_HEAD].concat(S.products.map(p => [p.name, p.generic, p.category, p.unit, p.cost, p.price, p.stock, p.reorder, p.expiry, p.barcode, p.vatExempt ? 'yes' : 'no'])));
+}
+function exportSales() {
+  if (!isOwner()) return toast('Only the owner can export sales.', true);
+  if (!(S.sales || []).length) return toast('There are no sales to export for this period.', true);
+  downloadCsv('pharmease-sales-' + $('sFrom').value + '-to-' + $('sTo').value + '.csv',
+    [['Sale no.', 'Date & time', 'Cashier', 'Items', 'Subtotal', 'Discount', 'Discount type', 'Total', 'Payment', 'Status']].concat(S.sales.map(x => [x.id, x.date, x.cashier, x.units, x.subtotal, x.discount, x.discountType, x.total, x.method, x.status])));
+}
+function openCsv() {
+  openModal('Import / Export products',
+    '<p style="margin-top:0">Bring your product list in from Excel or Google Sheets, or save a copy of it.</p>' +
+    '<div class="fg"><button class="btn alt" onclick="downloadTemplate()">1. Download the CSV template</button></div>' +
+    '<div class="fg"><label class="f">2. Choose your filled-in CSV file</label><input class="in" type="file" id="csvFile" accept=".csv,text/csv"><div class="hint">Columns: name, generic, category, unit, cost, price, stock, reorder, expiry (YYYY-MM-DD), barcode, vat_exempt (yes/no). Products whose name or barcode already exist are skipped. Needs an internet connection.</div></div>' +
+    '<div class="fg"><button class="btn alt" onclick="exportProducts()">Export current products to CSV</button></div>',
+    '<button class="btn alt" onclick="closeModal()">Close</button><button class="btn" id="csvGo">Import file</button>');
+  $('csvGo').onclick = async () => {
+    const f = $('csvFile').files[0]; if (!f) return toast('Please choose a CSV file first.', true);
+    try {
+      const t = parseCsv(await f.text()); if (t.length < 2) return toast('That file has no product rows.', true);
+      const head = t[0].map(h => h.trim().toLowerCase().replace(/[\s-]+/g, '_'));
+      const rows = t.slice(1).map(r => { const o = {}; head.forEach((h, i) => o[h] = r[i] == null ? '' : r[i].trim()); return o; });
+      const r = await run('importProducts', rows);
+      closeModal();
+      openModal('Import finished', '<p style="margin-top:0"><b>' + r.added + '</b> product' + (r.added === 1 ? '' : 's') + ' added. <b>' + r.skipped + '</b> skipped (already in the system).</p>' +
+        (r.problems.length ? '<p class="sub">Some rows were not imported:</p><ul class="sub">' + r.problems.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>' : ''),
+        '<button class="btn" onclick="closeModal()">Done</button>');
+    } catch (e) {}
+  };
+}
+
+/* ---------- Change my PIN / pharmacy name ---------- */
+function openPin() {
+  openModal('Change my PIN',
+    '<div class="fg"><label class="f">Current PIN</label><input class="in" id="pOld" type="password" inputmode="numeric" maxlength="8" autocomplete="current-password"></div>' +
+    '<div class="fg"><label class="f">New PIN (6-8 digits)</label><input class="in" id="pNew" type="password" inputmode="numeric" maxlength="8" autocomplete="new-password"></div>' +
+    '<div class="fg"><label class="f">Confirm new PIN</label><input class="in" id="pNew2" type="password" inputmode="numeric" maxlength="8" autocomplete="new-password"></div>',
+    '<button class="btn alt" onclick="closeModal()">Cancel</button><button class="btn" id="pSave">Change PIN</button>');
+  $('pSave').onclick = async () => {
+    if ($('pNew').value !== $('pNew2').value) return toast('The new PINs do not match.', true);
+    try { await run('changePin', { oldPin: $('pOld').value, newPin: $('pNew').value }); closeModal(); toast('PIN changed ✔'); } catch (e) {}
+  };
+}
+async function saveStore() { try { S.store = await run('saveStoreName', $('storeIn').value); toast('Saved ✔'); } catch (e) {} }
 
 /* ---------- Mobile: label table cells so rows can show as cards ---------- */
 let lblBusy = false;
@@ -947,6 +833,7 @@ new MutationObserver(() => { if (lblBusy) return; lblBusy = true; requestAnimati
 /* ---------- Users & access ---------- */
 async function loadUsers() { try { S.users = await run('listUsers'); renderUsers(); } catch (e) {} }
 function renderUsers() {
+  $('storeIn').value = S.store || '';
   $('usBody').innerHTML = S.users.map(u => '<tr><td><b>' + esc(u.name) + '</b></td><td>' + esc(u.username) + '</td><td>' + esc(u.role) + '</td><td><span class="tag ' + (u.active ? 'green' : 'gray') + '">' + (u.active ? 'Active' : 'Disabled') + '</span></td><td class="r"><button class="btn sm alt" onclick="openUser(\'' + esc(u.username) + '\')">Edit</button></td></tr>').join('');
 }
 function openUser(username) {
@@ -956,17 +843,16 @@ function openUser(username) {
     '<div class="fg"><label class="f">Full name *</label><input class="in" id="uName" value="' + esc(u.name) + '"></div>' +
     '<div class="row2"><div class="fg"><label class="f">Username *</label><input class="in" id="uUser" value="' + esc(u.username) + '"' + (isNew ? '' : ' disabled') + ' autocapitalize="none"><div class="hint">Letters and numbers, no spaces</div></div>' +
     '<div class="fg"><label class="f">Role</label><select class="in" id="uRole"><option' + (u.role === 'Cashier' ? ' selected' : '') + '>Cashier</option><option' + (u.role === 'Owner' ? ' selected' : '') + '>Owner</option></select></div></div>' +
-    '<div class="fg"><label class="f">' + (isNew ? 'PIN *' : 'New PIN') + '</label><input class="in" id="uPin" type="password" inputmode="numeric" maxlength="8" autocomplete="new-password" placeholder="4 to 8 digits"><div class="hint">' + (isNew ? 'The user signs in with this PIN.' : 'Leave blank to keep the current PIN.') + '</div></div>' +
-    (isNew ? '' : '<label style="display:flex;gap:8px;align-items:center;font-weight:700"><input type="checkbox" id="uActive"' + (u.active ? ' checked' : '') + ' style="width:20px;height:20px"> Account is active</label>'),
+    (isNew ? '<div class="fg"><label class="f">PIN * (6-8 digits)</label><input class="in" id="uPin" type="password" inputmode="numeric" maxlength="8" autocomplete="new-password"><div class="hint">The user signs in with this PIN and can change it later. Needs an internet connection.</div></div>'
+           : '<label style="display:flex;gap:8px;align-items:center;font-weight:700"><input type="checkbox" id="uActive"' + (u.active ? ' checked' : '') + ' style="width:20px;height:20px"> Account is active</label><div class="hint" style="margin-top:8px">Forgot a PIN? Disable this account and add the person again with a new username.</div>'),
     '<button class="btn alt" onclick="closeModal()">Cancel</button><button class="btn" id="uSave">Save user</button>');
   $('uSave').onclick = async () => {
     try {
-      S.users = await run('saveUser', { isNew, name: $('uName').value, username: $('uUser').value, role: $('uRole').value, pin: $('uPin').value, active: isNew ? true : $('uActive').checked });
+      S.users = await run('saveUser', { isNew, name: $('uName').value, username: $('uUser').value, role: $('uRole').value, pin: isNew ? $('uPin').value : '', active: isNew ? true : $('uActive').checked });
       closeModal(); renderUsers(); toast('User saved ✔');
     } catch (e) {}
   };
 }
-
 /* ---------- Sign in / session ---------- */
 const COPY = '<div class="acopy">© 2026 PharmEase. All rights reserved.</div>';
 function showAuth(html) { $('auth').innerHTML = '<div class="acard"><div class="logo">💊 PharmEase</div><div class="tag2">Pharmacy Inventory &amp; Sales</div>' + html + COPY + '</div>'; $('auth').classList.add('on'); }
@@ -982,7 +868,7 @@ function showSetup() {
   showAuth('<h2>Welcome!</h2><p class="sub" style="margin:0 0 14px">Create the owner account to get started. You can add cashiers later.</p>' +
     '<div class="fg"><label class="f" for="sName">Your full name</label><input class="in" id="sName"></div>' +
     '<div class="fg"><label class="f" for="sUser">Username</label><input class="in" id="sUser" autocapitalize="none" autocomplete="username"></div>' +
-    '<div class="row2"><div class="fg"><label class="f" for="sPin">PIN (4-8 digits)</label><input class="in" id="sPin" type="password" inputmode="numeric" maxlength="8" autocomplete="new-password"></div>' +
+    '<div class="row2"><div class="fg"><label class="f" for="sPin">PIN (6-8 digits)</label><input class="in" id="sPin" type="password" inputmode="numeric" maxlength="8" autocomplete="new-password"></div>' +
     '<div class="fg"><label class="f" for="sPin2">Confirm PIN</label><input class="in" id="sPin2" type="password" inputmode="numeric" maxlength="8" autocomplete="new-password"></div></div>' +
     '<div class="err" id="aErr"></div><button class="btn go" style="margin-top:0" id="sGo">Create account</button>');
   $('sGo').onclick = doSetup; $('sName').focus();
@@ -990,48 +876,35 @@ function showSetup() {
 async function doLogin() {
   $('aErr').textContent = '';
   const u = $('lUser').value.trim().toLowerCase(), pin = $('lPin').value;
-  if (PWA && (S.offline || !navigator.onLine)) return offlineLogin(u, pin);
-  try {
-    const r = await run('login', u, pin);
-    S.pinMem = PWA ? pin : '';
-    await startSession(r.token);
-    if (PWA) saveCred(u, pin, S.user);
-  } catch (e) {
-    if (PWA && e && e.network) return offlineLogin(u, pin);
-    $('aErr').textContent = String((e && e.message) || 'Could not sign in.').replace(/^Error:\s*/, ''); $('lPin').value = '';
-  }
+  try { await run('login', u, pin); await startSession(); }
+  catch (e) { $('aErr').textContent = String((e && e.message) || 'Could not sign in.').replace(/^Error:\s*/, ''); $('lPin').value = ''; }
 }
 async function doSetup() {
   $('aErr').textContent = '';
   if ($('sPin').value !== $('sPin2').value) { $('aErr').textContent = 'The two PINs do not match.'; return; }
-  try { const r = await run('setupOwner', { name: $('sName').value, username: $('sUser').value, pin: $('sPin').value }); await startSession(r.token); }
+  try { await run('setupOwner', { name: $('sName').value, username: $('sUser').value, pin: $('sPin').value }); await startSession(); }
   catch (e) { $('aErr').textContent = String((e && e.message) || 'Could not create the account.').replace(/^Error:\s*/, ''); }
 }
-async function startSession(token) {
-  S.token = token; try { sessionStorage.setItem('pe_token', token); } catch (e) {}
-  const d = await run('getInitData');
-  applyInit(d); await enterApp();
-}
-function applyInit(d) {
-  S.user = d.user; S.store = d.store; S.vat = d.vat; S.sp = d.sp; S.products = d.products; S.cats = d.categories;
-  saveCache();
-}
+async function startSession() { const d = await run('getInitData'); applyInit(d); await enterApp(); }
+function applyInit(d) { S.user = d.user; S.store = d.store; S.vat = d.vat; S.sp = d.sp; S.products = d.products; S.cats = d.categories; }
 async function enterApp() {
   $('auth').classList.remove('on'); $('auth').innerHTML = '';
   $('whoami').innerHTML = esc(S.user.name) + '<small>' + esc(S.user.role) + '</small>';
   buildMenu(); buildDtype(); onDtype();
   $('invCat').innerHTML = catOptions('All', true);
-  await reapplyPending();
+  $('sExp').style.display = isOwner() ? '' : 'none';
   go('pos'); refreshAll(); updateNet();
-  if (PWA && !S.offline) syncOutbox(true);
 }
 function endSession(msg) {
-  S.token = ''; S.user = null; S.cart = []; S.products = []; S.users = []; S.pinMem = '';
-  try { sessionStorage.removeItem('pe_token'); } catch (e) {}
+  S.user = null; S.cart = []; S.products = []; S.users = [];
   closeModal(); cartSheet(false); toggleMenu(false); $('cartBar').classList.remove('on');
   updateNet(); showLogin(); if (msg) toast(msg, true);
 }
-function logout() { const t = S.token; endSession(); if (t) api('logout', t).catch(() => {}); }
+function logout() {
+  const out = () => { endSession(); Backend.logout(); };
+  if (S.offline || S.pending) confirmBox('You are offline or still syncing. If you sign out now you will not be able to sign in again until you are back online. Sign out anyway?', 'Sign out', out);
+  else out();
+}
 /* ---------- Start ---------- */
 window.onload = async () => {
   $('posSearch').addEventListener('input', renderGrid);
@@ -1047,9 +920,415 @@ window.onload = async () => {
     const tag = (document.activeElement || {}).tagName;
     if (cur === 'pos' && S.user && /^[0-9a-z]$/i.test(e.key) && !e.ctrlKey && !e.metaKey && !e.altKey && !/INPUT|SELECT|TEXTAREA/.test(tag) && !$('ov').classList.contains('on')) $('posSearch').focus();
   });
-  S.offline = PWA && !navigator.onLine;
+  S.offline = !navigator.onLine;
   start();
 };
+</script>
+<script type="module">
+import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updatePassword, reauthenticateWithCredential, EmailAuthProvider, deleteUser } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
+import { initializeFirestore, getFirestore, persistentLocalCache, persistentMultipleTabManager, doc, getDoc, getDocs, setDoc, updateDoc, collection, query, where, orderBy, onSnapshot, writeBatch, increment, waitForPendingWrites } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+
+/* =====================================================================
+   1) PASTE YOUR FIREBASE SETTINGS HERE (Firebase console → Project settings → Your apps → Config)
+   ===================================================================== */
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyCAF976Vr1WKGIRntaAbQfZ4XWL79U9k-s",
+  authDomain: "pharmacy-pos-6b3b0.firebaseapp.com",
+  projectId: "pharmacy-pos-6b3b0",
+  storageBucket: "pharmacy-pos-6b3b0.firebasestorage.app",
+  messagingSenderId: "1029740260444",
+  appId: "1:1029740260444:web:4df80e8d16cb70638dca99",
+  measurementId: "G-9JHZH190YF"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+/* ===================================================================== */
+
+const configured = !/PASTE_/.test(firebaseConfig.apiKey + firebaseConfig.projectId);
+window.FB_READY = configured;
+window.Backend = {};
+
+if (configured) {
+  const VAT_RATE = 0.12;            // prices include VAT
+  const SENIOR_PWD_RATE = 0.20;     // Senior Citizen / PWD discount (after removing VAT)
+  const DEFAULT_CATEGORIES = ['Pain & Fever', 'Cough & Cold', 'Vitamins & Supplements', 'Antibiotics (Rx)', 'Maintenance Meds', 'First Aid', 'Personal Care', 'Others'];
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  let db;
+  try { db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) }); }
+  catch (e) { db = getFirestore(app); }          // e.g. private browsing: works, but without the offline copy
+
+  /* ---------- small helpers ---------- */
+  const B = window.Backend;
+  const clean = s => String(s == null ? '' : s).trim();
+  const cleanUser = s => clean(s).toLowerCase();
+  const r2 = n => Math.round((+n || 0) * 100) / 100;
+  const fail = m => { throw new Error(m); };
+  const emailOf = u => u + '@pharmease.app';       // staff sign in with a username; this is the hidden email behind it
+  const ownerOnly = () => { if (!S.user || S.user.role !== 'Owner') fail('Only the owner can do this.'); };
+  const needOnline = () => { if (!navigator.onLine) fail('You are offline. This needs an internet connection.'); };
+  const byName = (a, b) => a.name.localeCompare(b.name);
+  const ref = (...p) => doc(db, ...p);
+
+  function friendly(e) {
+    const c = (e && e.code) || '';
+    if (['auth/invalid-credential', 'auth/wrong-password', 'auth/user-not-found', 'auth/invalid-email'].includes(c)) return 'Wrong username or PIN.';
+    if (c === 'auth/too-many-requests') return 'Too many attempts. Please wait a few minutes and try again.';
+    if (c === 'auth/network-request-failed' || c === 'unavailable') return 'You are offline. This needs an internet connection.';
+    if (c === 'auth/email-already-in-use') return 'That username is already taken.';
+    if (c === 'auth/weak-password') return 'The PIN must be at least 6 digits.';
+    if (c === 'permission-denied') return 'You do not have permission to do that.';
+    if (c === 'failed-precondition' && /index/i.test((e && e.message) || '')) return 'One-time setup needed: create the database index described in the setup guide.';
+    return ((e && e.message) || 'Something went wrong.').replace(/^Firebase: /, '');
+  }
+  const wrap = fn => async (...a) => { try { return await fn(...a); } catch (e) { throw (e instanceof Error && !e.code) ? e : new Error(friendly(e)); } };
+
+  /* A write is saved on this device at once and sent when there is a connection. We don't wait for the server. */
+  function fire(promise, what) {
+    S.pending++; updateNet();
+    promise.then(() => { S.pending--; updateNet(); },
+      e => { S.pending--; updateNet(); toast(what + ' could not be saved: ' + friendly(e), true); });
+  }
+
+  function checkUser(u, name) {
+    if (!/^[a-z0-9._-]{3,20}$/.test(u)) fail('Username must be 3 to 20 letters or numbers, with no spaces.');
+    if (!name) fail('Please enter the full name.');
+  }
+  function checkPin(pin) { if (!/^\d{6,8}$/.test(pin)) fail('The PIN must be 6 to 8 digits.'); }
+
+  /* ---------- live data (products, categories, costs) ---------- */
+  let unsubs = [], prodMap = new Map(), costMap = new Map(), salesCache = {};
+  const stopListeners = () => { unsubs.forEach(u => u()); unsubs = []; prodMap = new Map(); costMap = new Map(); salesCache = {}; };   // also forget the previous user's data
+  const normProduct = (id, d) => ({ id, name: d.name || '', generic: d.generic || '', category: d.category || 'Others', unit: d.unit || 'pc',
+    price: +d.price || 0, stock: +d.stock || 0, reorder: +d.reorder || 0, expiry: d.expiry || '', barcode: d.barcode || '',
+    vatExempt: d.vatExempt === true, active: d.active !== false, cost: 0 });
+  function rebuild() {
+    S.products = [...prodMap.values()].filter(p => p.active).map(p => ({ ...p, cost: costMap.get(p.id) || 0 })).sort(byName);
+  }
+  function refresh() {
+    rebuild();
+    const a = document.activeElement;
+    if (S.user && !(a && a.classList && a.classList.contains('qin'))) refreshAll();   // don't disturb a quantity being typed
+  }
+  function startListeners(user) {
+    stopListeners();
+    return new Promise(resolve => {
+      const seen = { products: false, config: false };
+      const ready = k => { seen[k] = true; if (seen.products && seen.config) resolve(); };
+      const bad = k => e => { toast(friendly(e), true); ready(k); };
+      unsubs.push(onSnapshot(collection(db, 'products'), snap => {
+        prodMap = new Map(snap.docs.map(d => [d.id, normProduct(d.id, d.data())]));
+        refresh(); ready('products');
+      }, bad('products')));
+      unsubs.push(onSnapshot(ref('settings', 'config'), snap => {
+        S.cats = ((snap.data() || {}).categories || []).slice();
+        if (S.user) refreshAll();
+        ready('config');
+      }, bad('config')));
+      if (user.role === 'Owner') unsubs.push(onSnapshot(collection(db, 'costs'), snap => {
+        costMap = new Map(snap.docs.map(d => [d.id, +d.data().cost || 0])); refresh();
+      }, e => toast(friendly(e), true)));
+      setTimeout(resolve, 4000);      // never wait forever (e.g. first launch with no internet)
+    });
+  }
+  const authReady = new Promise(res => { const un = onAuthStateChanged(auth, u => { un(); res(u); }); });
+  onAuthStateChanged(auth, u => { if (!u && S.user) { stopListeners(); endSession('You have been signed out.'); } });
+
+  /* ---------- sign in / accounts ---------- */
+  B.authState = wrap(async () => ({ needsSetup: !(await getDoc(ref('settings', 'main'))).exists() }));
+
+  B.setupOwner = wrap(async o => {
+    const u = cleanUser(o.username), name = clean(o.name), pin = String(o.pin || '');
+    checkUser(u, name); checkPin(pin);
+    const cred = await createUserWithEmailAndPassword(auth, emailOf(u), pin);
+    try {
+      const b = writeBatch(db);
+      b.set(ref('users', cred.user.uid), { username: u, name, role: 'Owner', active: true });
+      b.set(ref('settings', 'main'), { store: 'PharmEase' });
+      b.set(ref('settings', 'config'), { categories: DEFAULT_CATEGORIES });
+      await b.commit();
+    } catch (e) { try { await deleteUser(cred.user); } catch (x) {} fail('Setup has already been completed. Please sign in instead.'); }
+    return {};
+  });
+
+  B.login = wrap(async (u, pin) => { await signInWithEmailAndPassword(auth, emailOf(cleanUser(u)), String(pin)); return {}; });
+
+  B.logout = wrap(async () => { stopListeners(); await signOut(auth); return true; });
+
+  B.getInitData = wrap(async () => {
+    const u = auth.currentUser || await authReady;
+    if (!u) fail('NOT_SIGNED_IN');
+    const snap = await getDoc(ref('users', u.uid));
+    if (!snap.exists() || snap.data().active !== true) { await signOut(auth); fail('Your account is not active. Please contact the owner.'); }
+    const d = snap.data(), user = { uid: u.uid, username: d.username, name: d.name, role: d.role };
+    await startListeners(user);
+    let store = 'PharmEase';
+    try { const m = await getDoc(ref('settings', 'main')); if (m.exists() && m.data().store) store = m.data().store; } catch (e) {}
+    S.syncing = true; updateNet();
+    waitForPendingWrites(db).then(() => { S.syncing = false; updateNet(); }, () => {});
+    return { user, store, vat: VAT_RATE, sp: SENIOR_PWD_RATE, products: S.products, categories: S.cats.slice() };
+  });
+
+  B.changePin = wrap(async o => {
+    const u = auth.currentUser; if (!u) fail('Please sign in again.');
+    checkPin(String(o.newPin || ''));
+    await reauthenticateWithCredential(u, EmailAuthProvider.credential(u.email, String(o.oldPin || '')));
+    await updatePassword(u, String(o.newPin));
+    return true;
+  });
+
+  B.listUsers = wrap(async () => {
+    ownerOnly(); needOnline();
+    const snap = await getDocs(collection(db, 'users'));
+    return snap.docs.map(d => ({ uid: d.id, ...d.data() })).sort(byName);
+  });
+
+  B.saveUser = wrap(async o => {
+    ownerOnly(); needOnline();
+    const u = cleanUser(o.username), name = clean(o.name), role = o.role === 'Owner' ? 'Owner' : 'Cashier';
+    checkUser(u, name);
+    if (o.isNew) {
+      const pin = String(o.pin || ''); checkPin(pin);
+      // A second, temporary connection is used so the owner stays signed in while the new account is created.
+      const app2 = getApps().find(a => a.name === 'creator') || initializeApp(firebaseConfig, 'creator');
+      const auth2 = getAuth(app2);
+      const cred = await createUserWithEmailAndPassword(auth2, emailOf(u), pin);
+      await signOut(auth2);
+      await setDoc(ref('users', cred.user.uid), { username: u, name, role, active: true });
+    } else {
+      const ex = (S.users || []).find(x => x.username === u); if (!ex) fail('User not found.');
+      const active = o.active !== false;
+      const otherOwners = S.users.filter(x => x.active && x.role === 'Owner' && x.username !== u).length;
+      if (!otherOwners && (role !== 'Owner' || !active)) fail('There must be at least one active Owner.');
+      await updateDoc(ref('users', ex.uid), { username: u, name, role, active });
+    }
+    return B.listUsers();
+  });
+
+  B.saveStoreName = wrap(async name => {
+    ownerOnly(); name = clean(name); if (!name) fail('Please enter the pharmacy name.');
+    await setDoc(ref('settings', 'main'), { store: name }, { merge: true });
+    return name;
+  });
+
+  /* ---------- products & stock (owner) ---------- */
+  const nextPid = () => 'P' + String([...prodMap.keys()].reduce((m, id) => Math.max(m, parseInt(id.replace(/\D/g, '')) || 0), 0) + 1).padStart(4, '0');
+  const logEntry = (p, type, qty, note, newStock) => ({ at: nowStr(), productId: p.id, name: p.name, type, qty, note: note || '', newStock, by: S.user.name });
+
+  B.saveProduct = wrap(async p => {
+    ownerOnly();
+    const name = clean(p.name);
+    if (!name) fail('Please enter the product name.');
+    if (p.price === '' || !(+p.price >= 0)) fail('Please enter a valid selling price.');
+    if ([...prodMap.values()].some(x => x.active && x.name.toLowerCase() === name.toLowerCase() && x.id !== p.id)) fail('A product named "' + name + '" already exists.');
+    const barcode = clean(p.barcode);
+    if (barcode) { const d = [...prodMap.values()].find(x => x.active && x.barcode === barcode && x.id !== p.id); if (d) fail('That barcode is already used by "' + d.name + '".'); }
+    const base = { name, generic: clean(p.generic), category: p.category || 'Others', unit: clean(p.unit) || 'pc', price: r2(p.price),
+      reorder: Math.max(0, Math.floor(+p.reorder || 0)), expiry: p.expiry || '', barcode, vatExempt: p.vatExempt === true, active: true };
+    const b = writeBatch(db);
+    let id = p.id;
+    if (id) b.update(ref('products', id), base);
+    else {
+      id = nextPid();
+      const stock = Math.max(0, Math.floor(+p.stock || 0));
+      b.set(ref('products', id), { ...base, stock });
+      if (stock > 0) b.set(doc(collection(db, 'stockLog')), logEntry({ id, name }, 'Initial stock', stock, 'New product', stock));
+    }
+    b.set(ref('costs', id), { cost: r2(p.cost) });
+    fire(b.commit(), 'The product');
+    return S.products;
+  });
+
+  B.deleteProduct = wrap(async id => {
+    ownerOnly();
+    fire(updateDoc(ref('products', id), { active: false }), 'The change');
+    return S.products;
+  });
+
+  /** mode: 'add' | 'remove' | 'set' */
+  B.adjustStock = wrap(async o => {
+    ownerOnly();
+    const p = S.products.find(x => x.id === o.id); if (!p) fail('Product not found.');
+    const q = Math.floor(+o.qty);
+    if (!(q >= 0) || isNaN(q)) fail('Please enter a valid quantity.');
+    let next = p.stock, type = '';
+    if (o.mode === 'add') { next = p.stock + q; type = 'Restock'; }
+    else if (o.mode === 'remove') { if (q > p.stock) fail('You cannot remove more than the current stock (' + p.stock + ').'); next = p.stock - q; type = 'Removed (damaged/expired)'; }
+    else { next = q; type = 'Stock count correction'; }
+    const b = writeBatch(db);
+    b.update(ref('products', p.id), { stock: next });
+    b.set(doc(collection(db, 'stockLog')), logEntry(p, type, next - p.stock, o.note, next));
+    fire(b.commit(), 'The stock change');
+    return S.products;
+  });
+
+  B.addCategory = wrap(async name => {
+    ownerOnly(); name = clean(name);
+    if (!name) fail('Please enter a category name.');
+    if (S.cats.some(c => c.toLowerCase() === name.toLowerCase())) fail('That category already exists.');
+    const list = [...S.cats, name];
+    fire(setDoc(ref('settings', 'config'), { categories: list }, { merge: true }), 'The category');
+    return list;
+  });
+  B.deleteCategory = wrap(async name => {
+    ownerOnly();
+    if (S.products.some(p => p.category === name)) fail('This category still has products. Move them to another category first.');
+    const list = S.cats.filter(c => c !== name);
+    fire(setDoc(ref('settings', 'config'), { categories: list }, { merge: true }), 'The category');
+    return list;
+  });
+
+  /** rows: [{name, generic, category, unit, cost, price, stock, reorder, expiry, barcode, vat_exempt}] */
+  B.importProducts = wrap(async rows => {
+    ownerOnly(); needOnline();
+    const names = new Set([...prodMap.values()].filter(p => p.active).map(p => p.name.toLowerCase()));
+    const codes = new Set([...prodMap.values()].filter(p => p.active && p.barcode).map(p => p.barcode));
+    let n = [...prodMap.keys()].reduce((m, id) => Math.max(m, parseInt(id.replace(/\D/g, '')) || 0), 0);
+    const newCats = new Set(), good = [], problems = []; let skipped = 0;
+    rows.forEach((r, i) => {
+      const name = clean(r.name), price = clean(r.price) === '' ? NaN : +r.price;
+      if (!name || !(price >= 0)) { problems.push('Row ' + (i + 2) + ': a name and a valid price are required.'); return; }
+      const bc = clean(r.barcode);
+      if (names.has(name.toLowerCase()) || (bc && codes.has(bc))) { skipped++; return; }
+      names.add(name.toLowerCase()); if (bc) codes.add(bc);
+      const cat = clean(r.category) || 'Others'; if (!S.cats.includes(cat)) newCats.add(cat);
+      good.push({ id: 'P' + String(++n).padStart(4, '0'), cost: r2(r.cost), p: { name, generic: clean(r.generic), category: cat, unit: clean(r.unit) || 'pc', price: r2(price),
+        stock: Math.max(0, Math.floor(+r.stock || 0)), reorder: Math.max(0, Math.floor(+r.reorder || 0)), expiry: clean(r.expiry), barcode: bc,
+        vatExempt: /^(y|yes|true|1)$/i.test(clean(r.vat_exempt)), active: true } });
+    });
+    for (let i = 0; i < good.length; i += 200) {
+      const b = writeBatch(db);
+      good.slice(i, i + 200).forEach(g => { b.set(ref('products', g.id), g.p); b.set(ref('costs', g.id), { cost: g.cost }); });
+      await b.commit();
+    }
+    if (newCats.size) await setDoc(ref('settings', 'config'), { categories: [...S.cats, ...newCats] }, { merge: true });
+    return { added: good.length, skipped, problems: problems.slice(0, 10) };
+  });
+
+  /* ---------- sales ---------- */
+  /* One small summary record per day keeps reports cheap: they read a handful of records instead of every sale. */
+  function summary(b, day, sg, s, lines) {
+    const items = {};
+    lines.forEach(l => { items[l.id] = { name: l.name, category: l.category || 'Others', qty: increment(sg * l.qty), revenue: increment(sg * l.total) }; });
+    b.set(ref('daily', day), { day, sales: increment(sg * s.total), count: increment(sg), units: increment(sg * s.units), discount: increment(sg * s.discount),
+      byMethod: { [s.method]: { total: increment(sg * s.total), count: increment(sg) } }, items }, { merge: true });
+  }
+
+  /** o: { rno, items:[{id,qty}], discountType, discount, discountName, discountId, method, cash } */
+  B.processSale = wrap(async o => {
+    const user = S.user; if (!user) fail('Please sign in again.');
+    if (!o.items || !o.items.length) fail('The cart is empty.');
+    const dtype = ['Senior Citizen', 'PWD', 'Custom'].includes(o.discountType) ? o.discountType : 'None';
+    const senior = dtype === 'Senior Citizen' || dtype === 'PWD';
+    let who = '';
+    if (senior) {
+      const nm = clean(o.discountName), idn = clean(o.discountId);
+      if (!nm || !idn) fail('Please enter the customer name and ID number for the ' + dtype + ' discount.');
+      who = nm + ' / ID ' + idn;
+    }
+    if (dtype === 'Custom' && user.role !== 'Owner') fail('Only the owner can give a custom discount.');
+    let sub = 0, net = 0, units = 0;
+    const lines = o.items.map(it => {
+      const p = S.products.find(x => x.id === it.id), q = Math.floor(+it.qty);
+      if (!p) fail('A product in the cart no longer exists.');
+      if (!(q >= 1)) fail('Invalid quantity for ' + p.name + '.');
+      if (p.stock < q) fail('Not enough stock for ' + p.name + ' (only ' + p.stock + ' left).');
+      const gross = q * p.price, base = p.vatExempt ? p.price : p.price / (1 + VAT_RATE);
+      sub += gross; net += senior ? q * base * (1 - SENIOR_PWD_RATE) : gross; units += q;
+      return { p, q, id: p.id, name: p.name, category: p.category, qty: q, price: p.price, total: r2(gross) };
+    });
+    sub = r2(sub);
+    let total, disc;
+    if (senior) { total = r2(net); disc = r2(sub - total); }
+    else if (dtype === 'Custom') { disc = r2(Math.min(Math.max(+o.discount || 0, 0), sub)); total = r2(sub - disc); }
+    else { disc = 0; total = sub; }
+    const method = o.method || 'Cash';
+    const cash = method === 'Cash' ? (+o.cash || 0) : total;
+    if (cash < total) fail('Cash received is less than the total.');
+    const change = r2(cash - total);
+
+    const id = /^S-\d{8}-[A-Z0-9]{5}$/.test(o.rno || '') ? o.rno : newRno();
+    const soldAt = nowStr(), day = soldAt.slice(0, 10);
+    const items = lines.map(l => ({ id: l.id, name: l.name, category: l.category, qty: l.qty, price: l.price, total: l.total }));
+    const sale = { soldAt, day, subtotal: sub, discount: disc, discountType: dtype === 'None' ? '' : dtype, discountRef: who, total, method, cash, change,
+      status: 'Completed', cashier: user.name, cashierUid: user.uid, units, items };
+    const b = writeBatch(db);
+    b.set(ref('sales', id), sale);
+    lines.forEach(l => b.update(ref('products', l.id), { stock: increment(-l.q) }));
+    summary(b, day, 1, sale, items);
+    fire(b.commit(), 'This sale');
+    lines.forEach(l => { l.p.stock -= l.q; });            // show the new stock straight away
+    return { sale: { id, date: soldAt, subtotal: sub, discount: disc, discountType: sale.discountType, discountRef: who, total, method, cash, change, cashier: user.name,
+      items: items.map(i => ({ name: i.name, qty: i.qty, price: i.price, total: i.total })) }, products: S.products };
+  });
+
+  B.getSales = wrap(async (from, to) => {
+    const u = S.user; if (!u) fail('Please sign in again.');
+    const cons = [where('soldAt', '>=', from + ' 00:00:00'), where('soldAt', '<=', to + ' 23:59:59')];
+    if (u.role !== 'Owner') cons.unshift(where('cashierUid', '==', u.uid));
+    const snap = await getDocs(query(collection(db, 'sales'), ...cons, orderBy('soldAt', 'desc')));
+    salesCache = {};
+    return snap.docs.map(d => {
+      const s = d.data(); salesCache[d.id] = s;
+      return { id: d.id, date: s.soldAt, subtotal: s.subtotal || 0, discount: s.discount || 0, total: s.total || 0, method: s.method, cash: s.cash || 0, change: s.change || 0,
+        status: s.status || 'Completed', units: s.units || 0, cashier: s.cashier || '', discountType: s.discountType || '', discountRef: s.discountRef || '' };
+    });
+  });
+
+  B.getSaleDetails = wrap(async id => {
+    const s = salesCache[id] || (await getDoc(ref('sales', id))).data() || fail('Sale not found.');
+    return (s.items || []).map(i => ({ name: i.name, qty: i.qty, price: i.price, total: i.total }));
+  });
+
+  B.voidSale = wrap(async id => {
+    ownerOnly();
+    const s = salesCache[id] || (await getDoc(ref('sales', id))).data() || fail('Sale not found.');
+    if (s.status === 'Void') fail('This sale is already voided.');
+    const b = writeBatch(db);
+    b.update(ref('sales', id), { status: 'Void' });
+    (s.items || []).forEach(i => b.update(ref('products', i.id), { stock: increment(i.qty) }));
+    summary(b, s.day, -1, s, s.items || []);
+    fire(b.commit(), 'The void');
+    if (salesCache[id]) salesCache[id].status = 'Void';
+    return S.products;
+  });
+
+  B.getReports = wrap(async (from, to) => {
+    ownerOnly(); needOnline();
+    const snap = await getDocs(query(collection(db, 'daily'), where('day', '>=', from), where('day', '<=', to), orderBy('day')));
+    let revenue = 0, cost = 0, units = 0, count = 0;
+    const top = {}, cats = {}, pay = {}, daily = [];
+    snap.docs.forEach(x => {
+      const d = x.data(); let dayCost = 0;
+      revenue += d.sales || 0; count += d.count || 0; units += d.units || 0;
+      Object.keys(d.items || {}).forEach(pid => {
+        const it = d.items[pid], q = it.qty || 0; if (!q && !it.revenue) return;
+        const c = (costMap.get(pid) || 0) * q; dayCost += c; cost += c;
+        const t = top[pid] || (top[pid] = { name: it.name, qty: 0, revenue: 0 }); t.qty += q; t.revenue += it.revenue || 0;
+        cats[it.category || 'Others'] = (cats[it.category || 'Others'] || 0) + (it.revenue || 0);
+      });
+      Object.keys(d.byMethod || {}).forEach(m => { const v = d.byMethod[m]; pay[m] = pay[m] || { total: 0, count: 0 }; pay[m].total += v.total || 0; pay[m].count += v.count || 0; });
+      daily.push({ d: d.day, sales: d.sales || 0, profit: (d.sales || 0) - dayCost });
+    });
+    return { revenue, cost, profit: revenue - cost, count, units, avg: count ? revenue / count : 0, daily,
+      top: Object.values(top).filter(t => t.qty > 0).sort((a, b) => b.qty - a.qty).slice(0, 10),
+      cats: Object.keys(cats).map(k => ({ name: k, revenue: cats[k] })).filter(c => c.revenue > 0).sort((a, b) => b.revenue - a.revenue),
+      pay: Object.keys(pay).map(k => ({ method: k, total: pay[k].total, count: pay[k].count })),
+      invCost: S.products.reduce((s, p) => s + p.stock * p.cost, 0), invRetail: S.products.reduce((s, p) => s + p.stock * p.price, 0) };
+  });
+}
 </script>
 </body>
 </html>
