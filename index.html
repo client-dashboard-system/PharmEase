@@ -83,20 +83,20 @@ tr.click{cursor:pointer}
 .sub{color:var(--muted);font-size:13px}
 
 /* POS */
-.pos{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:18px;align-items:start}
-.chips{display:flex;gap:8px;overflow:auto;padding-bottom:6px;margin:12px 0}
+.pos{display:grid;grid-template-columns:minmax(0,1fr) 430px;gap:18px;align-items:start}
+.chips{display:flex;flex-wrap:wrap;gap:8px;padding-bottom:6px;margin:12px 0}
 .chip{flex:none;border:1.5px solid var(--c1);background:#fff;border-radius:99px;padding:6px 14px;font-weight:700;color:var(--c4)}
 .chip.on{background:var(--c3);border-color:var(--c3);color:#fff}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;max-height:calc(100vh - 250px);overflow:auto;padding:2px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;padding:2px}
 .pc{background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:12px;text-align:left;display:flex;flex-direction:column;gap:4px;min-height:112px}
 .pc:hover{border-color:var(--c2);box-shadow:0 4px 14px rgba(42,122,157,.15)}
 .pc:disabled{opacity:.5;cursor:not-allowed;box-shadow:none;border-color:var(--line)}
 .pc b{font-size:14px;line-height:1.25}
 .pc .pr{margin-top:auto;font-size:17px;font-weight:800;color:var(--c4)}
-.cart{position:sticky;top:16px;padding:0;overflow:hidden}
+.cart{position:sticky;top:16px;padding:0;overflow:hidden;display:flex;flex-direction:column;height:calc(100vh - 32px)}
 .cart h3{margin:0;padding:14px 18px;background:var(--c5);color:#fff;font-size:16px;display:flex;justify-content:space-between;align-items:center}
 .cart h3 button{background:none;border:0;color:var(--c1);font-size:13px;text-decoration:underline}
-#cartItems{max-height:260px;overflow:auto;padding:6px 14px}
+#cartItems{flex:1 1 auto;min-height:150px;overflow:auto;padding:6px 14px}
 .ci{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"n x" "q t";gap:6px 10px;align-items:center;padding:10px 0;border-bottom:1px dashed var(--line)}
 .ci .cn{grid-area:n} .ci .qty{grid-area:q} .ci .lt{grid-area:t} .ci .x{grid-area:x}
 .ci small{display:block;color:var(--muted)}
@@ -107,9 +107,9 @@ tr.click{cursor:pointer}
 .qin:focus{border-color:var(--c3);outline:none;box-shadow:0 0 0 3px rgba(55,179,193,.25)}
 .ci .lt{text-align:right;font-weight:800}
 .ci .x{border:0;background:none;color:var(--red);font-size:16px}
-.cbody{padding:14px 18px;background:#F6FBFC;border-top:1px solid var(--line)}
+.cbody{flex:none;padding:10px 16px;background:#F6FBFC;border-top:1px solid var(--line)}
 .tl{display:flex;justify-content:space-between;margin:5px 0}
-.tl.big{font-size:24px;font-weight:800;color:var(--c5);margin:10px 0}
+.tl.big{font-size:24px;font-weight:800;color:var(--c5);margin:6px 0}
 .quick{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
 .quick button{border:1.5px solid var(--c1);background:#fff;border-radius:8px;padding:4px 10px;font-weight:700;color:var(--c4);font-size:13px}
 .chg{background:var(--green-bg);color:var(--green);border-radius:10px;padding:8px 12px;font-weight:800;display:flex;justify-content:space-between;margin-top:8px}
@@ -172,7 +172,6 @@ tr.click{cursor:pointer}
   .top{display:flex}
   .top button{min-width:44px;min-height:44px}
   .page{padding:18px 16px 40px}
-  .grid{max-height:calc(100vh - 230px)}
 }
 @media (max-width:560px){
   .row2{grid-template-columns:1fr}
@@ -188,9 +187,10 @@ tr.click{cursor:pointer}
 @media (max-width:700px){
   .in{font-size:16px}
   #p-pos{padding-bottom:96px}
+  .chips{flex-wrap:nowrap;overflow:auto}
   .pos{grid-template-columns:1fr}
   .grid{max-height:none;grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
-  .cart{position:fixed;left:0;right:0;bottom:0;top:auto;z-index:58;border:0;border-radius:18px 18px 0 0;max-height:90vh;display:flex;flex-direction:column;
+  .cart{position:fixed;left:0;right:0;bottom:0;top:auto;z-index:58;border:0;border-radius:18px 18px 0 0;height:auto;max-height:90vh;display:flex;flex-direction:column;
     transform:translateY(105%);visibility:hidden;transition:transform .25s,visibility .25s;box-shadow:0 -10px 30px rgba(0,0,0,.3)}
   .cart.open{transform:none;visibility:visible}
   .cart h3{flex:none}
@@ -238,6 +238,15 @@ tr.click{cursor:pointer}
 .net.off{background:var(--amber-bg);color:var(--amber);cursor:pointer}
 .net.pend{background:rgba(55,179,193,.28);color:#fff;cursor:pointer}
 .sfoot .net{margin-bottom:10px}
+.stat small{display:block;font-weight:700;font-size:12px;margin-top:3px}
+.stat small.up{color:var(--green)} .stat small.down{color:var(--red)}
+.chk{display:flex;gap:10px;align-items:center;font-weight:700;margin:0 0 12px}
+.chk input{width:20px;height:20px}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin:0 0 6px}
+.legend i{display:inline-block;width:18px;height:4px;border-radius:4px;vertical-align:middle;margin-right:6px}
+.minis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:12px}
+.minis div{background:var(--bg);border-radius:10px;padding:10px 12px}
+.minis span{display:block;font-size:12px;color:var(--muted);font-weight:600} .minis b{color:var(--c5)}
 .sfoot #whoami{color:#fff;font-weight:700;font-size:13px}
 .sfoot #whoami small{display:block;color:var(--c1);font-weight:400}
 .signout{margin:8px 0;width:100%;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:8px;padding:7px;font-weight:700}
@@ -259,6 +268,7 @@ tr.click{cursor:pointer}
   #printArea{display:block!important;padding:12mm}
   #printArea.is-receipt{width:76mm;margin:0 auto;padding:4mm 3mm}
   #printArea.is-receipt .rc{font-size:12px}
+  #printArea .noprint{display:none!important}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
@@ -271,7 +281,7 @@ tr.click{cursor:pointer}
   <aside class="side" id="side">
     <div class="brand"><b>💊 PharmEase</b><small>Pharmacy Inventory &amp; Sales</small></div>
     <nav class="menu" id="menu"></nav>
-    <div class="sfoot"><div class="net" id="netSide"></div><div id="whoami"></div><button class="signout" id="installBtn" style="display:none" onclick="installApp()">⬇ Install app</button><button class="signout" onclick="openPin()">Change PIN</button><button class="signout" onclick="logout()">Sign out</button><div class="copy">© 2026 PharmEase. All rights reserved.</div></div>
+    <div class="sfoot"><div class="net" id="netSide"></div><div id="whoami"></div><button class="signout" id="installBtn" style="display:none" onclick="installApp()">⬇ Install app</button><button class="signout" onclick="logout()">Sign out</button><div class="copy">© 2026 PharmEase. All rights reserved.</div></div>
   </aside>
 
   <div class="main">
@@ -279,7 +289,7 @@ tr.click{cursor:pointer}
 
     <!-- POS -->
     <section class="page" id="p-pos">
-      <div class="ph"><div><h1>Point of Sale</h1><p>Click a product to add it to the cart, or scan a barcode.</p></div></div>
+      <div class="ph"><div><h1>Point of Sale</h1><p>Click a product to add it to the cart, or scan a barcode.</p></div><div class="tools"><button class="btn alt sm" id="devBtn" style="display:none" onclick="openDevice()">⚙ Printer &amp; drawer</button></div></div>
       <div class="pos">
         <div>
           <input class="in" id="posSearch" placeholder="🔍  Search name, ID or scan barcode… (Enter to add)" autocomplete="off">
@@ -287,7 +297,7 @@ tr.click{cursor:pointer}
           <div class="grid" id="posGrid"></div>
         </div>
         <div class="card cart" id="cartPanel">
-          <h3>Current Sale <span><button onclick="clearCart()">Clear</button><button class="closeSheet" onclick="cartSheet(false)">Close ✕</button></span></h3>
+          <h3><span>Current Sale <small id="cartCount" style="font-weight:600;opacity:.85"></small></span><span><button onclick="clearCart()">Clear</button><button class="closeSheet" onclick="cartSheet(false)">Close ✕</button></span></h3>
           <div id="cartItems"></div>
           <div class="cbody">
             <div class="tl"><span>Subtotal</span><b id="tSub">₱0.00</b></div>
@@ -351,7 +361,7 @@ tr.click{cursor:pointer}
     <section class="page" id="p-reports">
       <div class="ph"><div><h1>Reports &amp; Monitoring</h1><p>See how your business is performing.</p></div>
         <div class="tools">
-          <button class="btn alt sm" onclick="presetRep('today')">Today</button><button class="btn alt sm" onclick="presetRep('week')">Last 7 days</button><button class="btn alt sm" onclick="presetRep('month')">This month</button>
+          <button class="btn alt sm" onclick="presetRep('today')">Today</button><button class="btn alt sm" onclick="presetRep('week')">Last 7 days</button><button class="btn alt sm" onclick="presetRep('days30')">Last 30 days</button><button class="btn alt sm" onclick="presetRep('month')">This month</button>
           <input class="in" type="date" id="rFrom" style="width:auto"><span>to</span><input class="in" type="date" id="rTo" style="width:auto">
           <button class="btn sm" onclick="loadReport()">Show</button><button class="btn alt sm" onclick="printEl('rptBody')">🖨 Print</button></div></div>
       <div id="rptBody"></div>
@@ -362,7 +372,7 @@ tr.click{cursor:pointer}
       <div class="ph"><div><h1>Users &amp; Access</h1><p>Create staff accounts. Everyone signs in with a username and a PIN.</p></div>
         <div class="tools"><button class="btn" onclick="openUser()">+ Add User</button></div></div>
       <div class="card" style="margin-bottom:16px"><label class="f" for="storeIn">Pharmacy name on receipts</label><div style="display:flex;gap:8px"><input class="in" id="storeIn" maxlength="60"><button class="btn" onclick="saveStore()">Save</button></div></div>
-      <div class="card" style="margin-bottom:16px"><b>Roles</b><p class="sub" style="margin:6px 0 0"><b>Owner:</b> full access. <b>Cashier:</b> can make sales, view stock and see their own sales. Cashiers cannot see costs, edit products or stock, void sales, give custom discounts, or open reports.</p></div>
+      <div class="card" style="margin-bottom:16px"><b>Roles</b><p class="sub" style="margin:6px 0 0"><b>Owner:</b> full access. <b>Cashier:</b> can make sales, view stock and see their own sales. Cashiers cannot see costs, edit products or stock, void sales, give custom discounts, or open reports. Only owners can change PINs.</p></div>
       <div class="tw"><table><thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Status</th><th class="r">Actions</th></tr></thead><tbody id="usBody"></tbody></table></div>
     </section>
   </div>
@@ -548,6 +558,7 @@ function calc() {
 function updateBar() {
   const n = S.cart.reduce((s, c) => s + c.qty, 0);
   $('cartBar').classList.toggle('on', n > 0 && cur === 'pos');
+  $('cartCount').textContent = n ? '· ' + n + ' item' + (n > 1 ? 's' : '') : '';
   if (n) $('cbInfo').textContent = '🛒 ' + n + ' item' + (n > 1 ? 's' : '') + ' · ' + peso(totals().total);
 }
 function cartSheet(o) { $('cartPanel').classList.toggle('open', o); $('cscrim').classList.toggle('on', o); }
@@ -561,6 +572,7 @@ async function checkout() {
 function finishSale(sale, products) {
   S.cart = []; $('cash').value = ''; resetDiscount();
   cartSheet(false); setProducts(products); showReceipt(sale); toast('Sale completed ✔');
+  afterSale(sale);
 }
 function receiptHtml(s) {
   return '<div class="rc"><div style="text-align:center"><b>' + esc(S.store) + '</b><br>Sales Receipt<br>' + esc(s.id) + '<br>' + esc(s.date) + (s.cashier ? '<br>Cashier: ' + esc(s.cashier) : '') + '</div><hr>' +
@@ -669,7 +681,7 @@ function openCategories() {
 /* ---------- Sales records ---------- */
 function range(kind) {
   const t = new Date(), f = new Date();
-  if (kind === 'week') f.setDate(t.getDate() - 6); else if (kind === 'month') f.setDate(1);
+  if (kind === 'week') f.setDate(t.getDate() - 6); else if (kind === 'days30') f.setDate(t.getDate() - 29); else if (kind === 'month') f.setDate(1);
   return [ymd(f), ymd(t)];
 }
 function presetSales(k) { [$('sFrom').value, $('sTo').value] = range(k); loadSales(); }
@@ -696,24 +708,83 @@ async function openSale(id) {
 
 /* ---------- Reports ---------- */
 function presetRep(k) { [$('rFrom').value, $('rTo').value] = range(k); loadReport(); }
+let REP = null, TOPM = 'qty';
+function prevRange(from, to) {
+  const a = new Date(from + 'T00:00:00'), b = new Date(to + 'T00:00:00');
+  const n = Math.round((b - a) / 864e5) + 1;
+  const pt = new Date(a); pt.setDate(pt.getDate() - 1);
+  const pf = new Date(pt); pf.setDate(pf.getDate() - (n - 1));
+  return [ymd(pf), ymd(pt), n];
+}
 async function loadReport() {
+  const from = $('rFrom').value, to = $('rTo').value;
+  if (!from || !to || from > to) return toast('Please choose a valid date range.', true);
   try {
-    const from = $('rFrom').value, to = $('rTo').value, r = await run('getReports', from, to);
-    const map = {}; r.daily.forEach(d => map[d.d] = d);
-    const days = []; for (let d = new Date(from + 'T00:00:00'), e = new Date(to + 'T00:00:00'); d <= e && days.length < 62; d.setDate(d.getDate() + 1)) days.push(ymd(d));
-    const max = Math.max(1, ...days.map(d => map[d] ? map[d].sales : 0)), few = days.length <= 10;
-    const maxQ = Math.max(1, ...r.top.map(t => t.qty)), maxC = Math.max(1, ...r.cats.map(c => c.revenue));
-    const hb = (n, v, m, txt) => '<div class="hbar"><div><span>' + esc(n) + '</span><b>' + txt + '</b></div><i><u style="width:' + Math.max(3, v / m * 100) + '%"></u></i></div>';
-    $('rptBody').innerHTML =
-      '<div class="stats"><div class="stat green"><span>Total sales</span><b>' + peso(r.revenue) + '</b></div><div class="stat"><span>Estimated profit</span><b>' + peso(r.profit) + '</b></div><div class="stat"><span>Transactions</span><b>' + r.count + '</b></div><div class="stat"><span>Items sold</span><b>' + r.units + '</b></div><div class="stat"><span>Average per sale</span><b>' + peso(r.avg) + '</b></div></div>' +
-      '<div class="card"><h3>Sales per day</h3>' + (r.count ? '<div class="bars">' + days.map(d => { const v = map[d] ? map[d].sales : 0; return '<div class="bar" title="' + d + ': ' + peso(v) + '">' + (few && v ? '<em>' + Math.round(v).toLocaleString() + '</em>' : '') + '<i style="height:' + (v / max * 80) + '%"></i><span>' + d.slice(5) + '</span></div>'; }).join('') + '</div>' : '<div class="empty"><b>No sales in this period</b>Pick another date range.</div>') + '</div>' +
-      '<div class="cols"><div class="card"><h3>Best-selling products</h3>' + (r.top.length ? r.top.map(t => hb(t.name, t.qty, maxQ, t.qty + ' sold · ' + peso(t.revenue))).join('') : '<div class="sub">No data yet.</div>') + '</div>' +
-      '<div class="card"><h3>Sales by category</h3>' + (r.cats.length ? r.cats.map(c => hb(c.name, c.revenue, maxC, peso(c.revenue))).join('') : '<div class="sub">No data yet.</div>') + '</div>' +
-      '<div class="card"><h3>Payment methods</h3>' + (r.pay.length ? '<table style="min-width:0">' + r.pay.map(p => '<tr><td><b>' + esc(p.method) + '</b></td><td class="r">' + p.count + ' sales</td><td class="r"><b>' + peso(p.total) + '</b></td></tr>').join('') + '</table>' : '<div class="sub">No data yet.</div>') + '</div>' +
-      '<div class="card"><h3>Inventory value (right now)</h3><div class="tl"><span>At cost</span><b>' + peso(r.invCost) + '</b></div><div class="tl"><span>At selling price</span><b>' + peso(r.invRetail) + '</b></div><div class="tl"><span>Possible profit if all sold</span><b>' + peso(r.invRetail - r.invCost) + '</b></div></div></div>';
+    const [pf, pt, n] = prevRange(from, to);
+    const [r, p] = await Promise.all([run('getReports', from, to), Backend.getReports(pf, pt).catch(() => null)]);
+    REP = { r, p, from, to, n };
+    renderReport();
   } catch (e) {}
 }
-
+const niceMax = v => { if (v <= 0) return 1; const k = Math.pow(10, Math.floor(Math.log10(v))), n = v / k; return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * k; };
+const shortPeso = v => '₱' + (v >= 1e6 ? +(v / 1e6).toFixed(1) + 'M' : v >= 1000 ? +(v / 1000).toFixed(1) + 'k' : Math.round(v));
+function trendPoints(r, from, to) {
+  const map = {}; r.daily.forEach(d => map[d.d] = d);
+  const days = []; for (let d = new Date(from + 'T00:00:00'), e = new Date(to + 'T00:00:00'); d <= e && days.length < 400; d.setDate(d.getDate() + 1)) days.push(ymd(d));
+  const val = (d, k) => map[d] ? map[d][k] : 0;
+  if (days.length <= 62) return { weekly: false, pts: days.map(d => ({ label: d.slice(5), sales: val(d, 'sales'), profit: val(d, 'profit'), tip: d })) };
+  const pts = [];
+  for (let i = 0; i < days.length; i += 7) { const c = days.slice(i, i + 7); pts.push({ label: c[0].slice(5), sales: c.reduce((a, d) => a + val(d, 'sales'), 0), profit: c.reduce((a, d) => a + val(d, 'profit'), 0), tip: c[0] + ' to ' + c[c.length - 1] }); }
+  return { weekly: true, pts };
+}
+function trendSvg(pts) {
+  const W = 760, H = 260, L = 58, R = 16, T = 14, B = 34, iw = W - L - R, ih = H - T - B;
+  const max = niceMax(Math.max(1, ...pts.map(p => Math.max(p.sales, p.profit))));
+  const x = i => L + (pts.length === 1 ? iw / 2 : i * iw / (pts.length - 1)), y = v => T + ih - Math.max(0, v) / max * ih;
+  const path = k => pts.map((p, i) => (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(p[k]).toFixed(1)).join(' ');
+  const step = Math.ceil(pts.length / 8);
+  let g = '';
+  for (let i = 0; i <= 4; i++) { const v = max * i / 4, yy = y(v); g += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + yy + '" y2="' + yy + '" stroke="#D3E6EC"/><text x="' + (L - 8) + '" y="' + (yy + 4) + '" text-anchor="end" font-size="11" fill="#5E7F90">' + shortPeso(v) + '</text>'; }
+  const xl = pts.map((p, i) => i % step === 0 ? '<text x="' + x(i) + '" y="' + (H - 12) + '" text-anchor="middle" font-size="11" fill="#5E7F90">' + p.label + '</text>' : '').join('');
+  const dots = pts.map((p, i) => '<circle cx="' + x(i) + '" cy="' + y(p.sales) + '" r="' + (pts.length > 40 ? 2.5 : 4) + '" fill="#fff" stroke="#2A7A9D" stroke-width="2"><title>' + p.tip + ' — Sales ' + peso(p.sales) + ' · Profit ' + peso(p.profit) + '</title></circle>').join('');
+  const area = pts.length > 1 ? '<path d="' + path('sales') + ' L' + x(pts.length - 1) + ' ' + (T + ih) + ' L' + x(0) + ' ' + (T + ih) + ' Z" fill="#37B3C1" opacity=".16"/>' : '';
+  return '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:auto" role="img" aria-label="Sales trend">' + g + area +
+    '<path d="' + path('profit') + '" fill="none" stroke="#37B3C1" stroke-width="2.5" stroke-dasharray="6 4" stroke-linejoin="round"/>' +
+    '<path d="' + path('sales') + '" fill="none" stroke="#2A7A9D" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>' + dots + xl + '</svg>';
+}
+function renderReport() {
+  const { r, p, from, to, n } = REP;
+  const delta = (a, b) => { if (!p || !(b > 0)) return ''; const c = Math.round((a - b) / b * 1000) / 10; return '<small class="' + (c >= 0 ? 'up' : 'down') + '">' + (c >= 0 ? '▲ ' : '▼ ') + Math.abs(c) + '% vs previous ' + n + ' day' + (n > 1 ? 's' : '') + '</small>'; };
+  const hb = (nm, v, m, txt) => '<div class="hbar"><div><span>' + esc(nm) + '</span><b>' + txt + '</b></div><i><u style="width:' + Math.max(3, v / m * 100) + '%"></u></i></div>';
+  const tp = trendPoints(r, from, to), peak = tp.pts.reduce((a, b) => b.sales > a.sales ? b : a, tp.pts[0] || { sales: 0, tip: '—' });
+  const maxC = Math.max(1, ...r.cats.map(c => c.revenue));
+  $('rptBody').innerHTML =
+    '<div class="stats"><div class="stat green"><span>Total sales</span><b>' + peso(r.revenue) + '</b>' + delta(r.revenue, p && p.revenue) + '</div>' +
+    '<div class="stat"><span>Estimated profit</span><b>' + peso(r.profit) + '</b>' + delta(r.profit, p && p.profit) + '</div>' +
+    '<div class="stat"><span>Transactions</span><b>' + r.count + '</b>' + delta(r.count, p && p.count) + '</div>' +
+    '<div class="stat"><span>Items sold</span><b>' + r.units + '</b>' + delta(r.units, p && p.units) + '</div>' +
+    '<div class="stat"><span>Average per sale</span><b>' + peso(r.avg) + '</b></div></div>' +
+    '<div class="card" style="margin-bottom:16px"><h3>Sales trend' + (tp.weekly ? ' <span class="sub">(weekly)</span>' : '') + '</h3>' +
+    (r.count ? '<div class="legend"><span><i style="background:#2A7A9D"></i>Sales</span><span><i style="background:#37B3C1"></i>Estimated profit</span><span>Hover over a point for details</span></div>' + trendSvg(tp.pts) +
+      '<div class="minis"><div><span>Average per day</span><b>' + peso(r.revenue / n) + '</b></div><div><span>Best ' + (tp.weekly ? 'week' : 'day') + '</span><b>' + peso(peak.sales) + '</b><span>' + esc(peak.tip) + '</span></div><div><span>Previous ' + n + ' day' + (n > 1 ? 's' : '') + '</span><b>' + (p ? peso(p.revenue) : '—') + '</b></div></div>'
+      : '<div class="empty"><b>No sales in this period</b>Pick another date range.</div>') + '</div>' +
+    '<div class="card" style="margin-bottom:16px"><h3>Top selling items</h3>' +
+    '<div class="chips noprint" id="topSw" style="margin:0 0 10px"><button class="chip" data-m="qty" onclick="setTop(\'qty\')">By quantity</button><button class="chip" data-m="revenue" onclick="setTop(\'revenue\')">By sales</button><button class="chip" data-m="profit" onclick="setTop(\'profit\')">By profit</button></div>' +
+    '<div class="tw"><table style="min-width:520px"><thead><tr><th class="c">#</th><th>Item</th><th class="r">Qty sold</th><th class="r">Sales</th><th class="r">Profit</th><th class="r">Share</th></tr></thead><tbody id="topBody"></tbody></table></div></div>' +
+    '<div class="cols"><div class="card"><h3>Sales by category</h3>' + (r.cats.length ? r.cats.map(c => hb(c.name, c.revenue, maxC, peso(c.revenue))).join('') : '<div class="sub">No data yet.</div>') + '</div>' +
+    '<div class="card"><h3>Payment methods</h3>' + (r.pay.length ? '<table style="min-width:0">' + r.pay.map(x => '<tr><td><b>' + esc(x.method) + '</b></td><td class="r">' + x.count + ' sales</td><td class="r"><b>' + peso(x.total) + '</b></td></tr>').join('') + '</table>' : '<div class="sub">No data yet.</div>') + '</div>' +
+    '<div class="card"><h3>Inventory value (right now)</h3><div class="tl"><span>At cost</span><b>' + peso(r.invCost) + '</b></div><div class="tl"><span>At selling price</span><b>' + peso(r.invRetail) + '</b></div><div class="tl"><span>Possible profit if all sold</span><b>' + peso(r.invRetail - r.invCost) + '</b></div></div></div>';
+  renderTop();
+}
+function renderTop() {
+  const m = TOPM, r = REP.r;
+  const list = r.top.slice().sort((a, b) => b[m] - a[m]).slice(0, 10);
+  const maxv = Math.max(1, ...list.map(t => t[m])), total = r.top.reduce((a, t) => a + t.revenue, 0) || 1;
+  $('topBody').innerHTML = list.length ? list.map((t, i) => '<tr><td class="c"><b>' + (i + 1) + '</b></td><td><b>' + esc(t.name) + '</b><div class="hbar" style="margin:4px 0 0"><i><u style="width:' + Math.max(3, t[m] / maxv * 100) + '%"></u></i></div></td><td class="r"><b>' + t.qty + '</b></td><td class="r">' + peso(t.revenue) + '</td><td class="r">' + peso(t.profit) + '</td><td class="r">' + (Math.round(t.revenue / total * 1000) / 10) + '%</td></tr>').join('')
+    : '<tr><td colspan="6"><div class="empty"><b>No sales in this period</b></div></td></tr>';
+  document.querySelectorAll('#topSw .chip').forEach(b => b.classList.toggle('on', b.dataset.m === m));
+}
+function setTop(m) { TOPM = m; renderTop(); }
 /* ---------- Connection, install, start-up ---------- */
 const newRno = () => 'S-' + ymd(new Date()).replace(/-/g, '') + '-' + Math.random().toString(36).slice(2, 7).toUpperCase().padEnd(5, '0');
 const nowStr = () => { const d = new Date(); return ymd(d) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()); };
@@ -801,6 +872,55 @@ function openCsv() {
   };
 }
 
+/* ---------- Printer & cash drawer (settings are kept on this device only) ---------- */
+const DEV_KEY = 'pe_device', DEV_DEFAULT = { autoPrint: true, drawer: false, drawerAll: false, via: 'printer', baud: 9600 };
+function devSettings() { try { return Object.assign({}, DEV_DEFAULT, JSON.parse(localStorage.getItem(DEV_KEY) || '{}')); } catch (e) { return Object.assign({}, DEV_DEFAULT); } }
+function afterSale(sale) {
+  const d = devSettings();
+  if (d.drawer && (d.drawerAll || sale.method === 'Cash')) openDrawer(false);
+  if (d.autoPrint) setTimeout(() => printEl('rcpt'), 200);        // the receipt is already on screen in the pop-up
+}
+async function openDrawer(test) {
+  const d = devSettings();
+  if (d.via !== 'serial') { if (test) toast('This drawer opens through the printer — use "Test print".'); return; }
+  try {
+    if (!('serial' in navigator)) throw new Error('This browser cannot open the drawer directly. Use Chrome or Edge on a computer.');
+    let port = (await navigator.serial.getPorts())[0];
+    if (!port) { if (!test) throw new Error('The drawer is not connected yet. Ask the owner to connect it in Printer & drawer settings.'); port = await navigator.serial.requestPort(); }
+    await port.open({ baudRate: +d.baud || 9600 });
+    const w = port.writable.getWriter();
+    await w.write(new Uint8Array([0x1B, 0x70, 0x00, 0x19, 0xFA]));   // standard "open drawer" command
+    w.releaseLock(); await port.close();
+    if (test) toast('Drawer command sent ✔');
+  } catch (e) { toast(String((e && e.message) || 'Could not open the cash drawer.'), true); }
+}
+async function connectDrawer() {
+  try { if (!('serial' in navigator)) throw new Error('This browser cannot connect a drawer directly. Use Chrome or Edge on a computer.'); await navigator.serial.requestPort(); toast('Drawer connected ✔'); }
+  catch (e) { if (!e || e.name !== 'NotFoundError') toast(String((e && e.message) || 'Could not connect.'), true); }
+}
+function testPrint() {
+  const s = { id: 'TEST-000', date: nowStr(), cashier: S.user.name, subtotal: 100, discount: 0, total: 100, method: 'Cash', cash: 100, change: 0, items: [{ name: 'Test item', qty: 1, price: 100, total: 100 }] };
+  $('printArea').innerHTML = receiptHtml(s); doPrint('is-receipt');
+}
+function openDevice() {
+  const d = devSettings();
+  openModal('Printer & cash drawer',
+    '<p class="sub" style="margin-top:0">These settings apply to <b>this device only</b>, so set them on each cashier computer.</p>' +
+    '<label class="chk"><input type="checkbox" id="dAuto"' + (d.autoPrint ? ' checked' : '') + '> Print the receipt automatically when Complete Sale is clicked</label>' +
+    '<label class="chk"><input type="checkbox" id="dDrawer"' + (d.drawer ? ' checked' : '') + '> Open the cash drawer when Complete Sale is clicked</label>' +
+    '<div class="row2"><div class="fg"><label class="f">Open the drawer for</label><select class="in" id="dAll"><option value="0"' + (d.drawerAll ? '' : ' selected') + '>Cash sales only</option><option value="1"' + (d.drawerAll ? ' selected' : '') + '>Every sale</option></select></div>' +
+    '<div class="fg"><label class="f">Drawer is connected</label><select class="in" id="dVia"><option value="printer"' + (d.via === 'printer' ? ' selected' : '') + '>Through the receipt printer</option><option value="serial"' + (d.via === 'serial' ? ' selected' : '') + '>Directly by USB / serial cable</option></select></div></div>' +
+    '<div class="hint" style="margin-bottom:12px"><b>Through the printer</b> (most common): in Windows, open Printers &amp; scanners → your receipt printer → Printing preferences, and turn on “open cash drawer after printing” (the wording varies by brand). <b>Directly by cable</b> works in Chrome or Edge on a computer only; press Connect once.</div>' +
+    '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn alt sm" onclick="testPrint()">Test print</button><button class="btn alt sm" onclick="connectDrawer()">Connect drawer (cable)</button><button class="btn alt sm" onclick="devSave(false);openDrawer(true)">Test drawer (cable)</button></div>' +
+    '<div class="hint" style="margin-top:12px">To print <b>without the print window</b>, start Chrome with <b>--kiosk-printing</b> (see the setup guide) and set the receipt printer as the default printer.</div>',
+    '<button class="btn alt" onclick="closeModal()">Cancel</button><button class="btn" onclick="devSave(true)">Save</button>');
+}
+function devSave(close) {
+  const d = { autoPrint: $('dAuto').checked, drawer: $('dDrawer').checked, drawerAll: $('dAll').value === '1', via: $('dVia').value, baud: 9600 };
+  try { localStorage.setItem(DEV_KEY, JSON.stringify(d)); } catch (e) {}
+  if (close) { closeModal(); toast('Saved ✔'); }
+}
+
 /* ---------- Change my PIN / pharmacy name ---------- */
 function openPin() {
   openModal('Change my PIN',
@@ -834,7 +954,24 @@ new MutationObserver(() => { if (lblBusy) return; lblBusy = true; requestAnimati
 async function loadUsers() { try { S.users = await run('listUsers'); renderUsers(); } catch (e) {} }
 function renderUsers() {
   $('storeIn').value = S.store || '';
-  $('usBody').innerHTML = S.users.map(u => '<tr><td><b>' + esc(u.name) + '</b></td><td>' + esc(u.username) + '</td><td>' + esc(u.role) + '</td><td><span class="tag ' + (u.active ? 'green' : 'gray') + '">' + (u.active ? 'Active' : 'Disabled') + '</span></td><td class="r"><button class="btn sm alt" onclick="openUser(\'' + esc(u.username) + '\')">Edit</button></td></tr>').join('');
+  $('usBody').innerHTML = S.users.map(u => {
+    const me = S.user && u.username === S.user.username;
+    return '<tr><td><b>' + esc(u.name) + '</b>' + (me ? ' <span class="sub">(you)</span>' : '') + '</td><td>' + esc(u.username) + '</td><td>' + esc(u.role) + '</td><td><span class="tag ' + (u.active ? 'green' : 'gray') + '">' + (u.active ? 'Active' : 'Disabled') + '</span></td><td class="r"><button class="btn sm alt" onclick="openUser(\'' + esc(u.username) + '\')">Edit</button> <button class="btn sm" onclick="openPinFor(\'' + esc(u.username) + '\')">Change PIN</button></td></tr>';
+  }).join('');
+}
+function openPinFor(username) { if (S.user && username === S.user.username) openPin(); else openSetPin(username); }
+function openSetPin(username) {
+  const u = S.users.find(x => x.username === username); if (!u) return;
+  openModal('Change PIN — ' + u.name,
+    '<p style="margin-top:0">Set a new PIN for <b>' + esc(u.name) + '</b>. It works right away. If they are signed in on a device, they will be asked to sign in again.</p>' +
+    '<div class="fg"><label class="f">New PIN (6-8 digits)</label><input class="in" id="spNew" type="password" inputmode="numeric" maxlength="8" autocomplete="new-password"></div>' +
+    '<div class="fg"><label class="f">Confirm new PIN</label><input class="in" id="spNew2" type="password" inputmode="numeric" maxlength="8" autocomplete="new-password"><div class="hint">Needs an internet connection.</div></div>',
+    '<button class="btn alt" onclick="closeModal()">Cancel</button><button class="btn" id="spSave">Change PIN</button>');
+  $('spNew').focus();
+  $('spSave').onclick = async () => {
+    if ($('spNew').value !== $('spNew2').value) return toast('The two PINs do not match.', true);
+    try { S.users = await run('setUserPin', { username, newPin: $('spNew').value }); closeModal(); renderUsers(); toast('PIN changed ✔'); } catch (e) {}
+  };
 }
 function openUser(username) {
   const u = username ? S.users.find(x => x.username === username) : { name: '', username: '', role: 'Cashier', active: true };
@@ -844,7 +981,7 @@ function openUser(username) {
     '<div class="row2"><div class="fg"><label class="f">Username *</label><input class="in" id="uUser" value="' + esc(u.username) + '"' + (isNew ? '' : ' disabled') + ' autocapitalize="none"><div class="hint">Letters and numbers, no spaces</div></div>' +
     '<div class="fg"><label class="f">Role</label><select class="in" id="uRole"><option' + (u.role === 'Cashier' ? ' selected' : '') + '>Cashier</option><option' + (u.role === 'Owner' ? ' selected' : '') + '>Owner</option></select></div></div>' +
     (isNew ? '<div class="fg"><label class="f">PIN * (6-8 digits)</label><input class="in" id="uPin" type="password" inputmode="numeric" maxlength="8" autocomplete="new-password"><div class="hint">The user signs in with this PIN and can change it later. Needs an internet connection.</div></div>'
-           : '<label style="display:flex;gap:8px;align-items:center;font-weight:700"><input type="checkbox" id="uActive"' + (u.active ? ' checked' : '') + ' style="width:20px;height:20px"> Account is active</label><div class="hint" style="margin-top:8px">Forgot a PIN? Disable this account and add the person again with a new username.</div>'),
+           : '<label style="display:flex;gap:8px;align-items:center;font-weight:700"><input type="checkbox" id="uActive"' + (u.active ? ' checked' : '') + ' style="width:20px;height:20px"> Account is active</label><div class="hint" style="margin-top:8px">To change the PIN, use the Change PIN button in the list.</div>'),
     '<button class="btn alt" onclick="closeModal()">Cancel</button><button class="btn" id="uSave">Save user</button>');
   $('uSave').onclick = async () => {
     try {
@@ -893,6 +1030,7 @@ async function enterApp() {
   buildMenu(); buildDtype(); onDtype();
   $('invCat').innerHTML = catOptions('All', true);
   $('sExp').style.display = isOwner() ? '' : 'none';
+  $('devBtn').style.display = isOwner() ? '' : 'none';
   go('pos'); refreshAll(); updateNet();
 }
 function endSession(msg) {
@@ -933,13 +1071,12 @@ import { initializeFirestore, getFirestore, persistentLocalCache, persistentMult
    1) PASTE YOUR FIREBASE SETTINGS HERE (Firebase console → Project settings → Your apps → Config)
    ===================================================================== */
 const firebaseConfig = {
- apiKey: "AIzaSyCAF976Vr1WKGIRntaAbQfZ4XWL79U9k-s",
-  authDomain: "pharmacy-pos-6b3b0.firebaseapp.com",
-  projectId: "pharmacy-pos-6b3b0",
-  storageBucket: "pharmacy-pos-6b3b0.firebasestorage.app",
-  messagingSenderId: "1029740260444",
-  appId: "1:1029740260444:web:4df80e8d16cb70638dca99",
-  measurementId: "G-9JHZH190YF"
+  apiKey: 'PASTE_API_KEY',
+  authDomain: 'PASTE_PROJECT_ID.firebaseapp.com',
+  projectId: 'PASTE_PROJECT_ID',
+  storageBucket: 'PASTE_PROJECT_ID.firebasestorage.app',
+  messagingSenderId: 'PASTE_SENDER_ID',
+  appId: 'PASTE_APP_ID'
 };
 /* ===================================================================== */
 
@@ -1025,6 +1162,9 @@ if (configured) {
         if (S.user) refreshAll();
         ready('config');
       }, bad('config')));
+      unsubs.push(onSnapshot(ref('users', user.uid), snap => {
+        if (S.user && (!snap.exists() || snap.data().active !== true)) { stopListeners(); signOut(auth); endSession('Your account was changed. Please sign in again.'); }
+      }, () => {}));
       if (user.role === 'Owner') unsubs.push(onSnapshot(collection(db, 'costs'), snap => {
         costMap = new Map(snap.docs.map(d => [d.id, +d.data().cost || 0])); refresh();
       }, e => toast(friendly(e), true)));
@@ -1033,6 +1173,15 @@ if (configured) {
   }
   const authReady = new Promise(res => { const un = onAuthStateChanged(auth, u => { un(); res(u); }); });
   onAuthStateChanged(auth, u => { if (!u && S.user) { stopListeners(); endSession('You have been signed out.'); } });
+
+  async function makeAccount(email, pin) {
+    // A second, temporary connection is used so the owner stays signed in while the account is created.
+    const app2 = getApps().find(a => a.name === 'creator') || initializeApp(firebaseConfig, 'creator');
+    const auth2 = getAuth(app2);
+    const cred = await createUserWithEmailAndPassword(auth2, email, pin);
+    await signOut(auth2);
+    return cred;
+  }
 
   /* ---------- sign in / accounts ---------- */
   B.authState = wrap(async () => ({ needsSetup: !(await getDoc(ref('settings', 'main'))).exists() }));
@@ -1044,6 +1193,7 @@ if (configured) {
     try {
       const b = writeBatch(db);
       b.set(ref('users', cred.user.uid), { username: u, name, role: 'Owner', active: true });
+      b.set(ref('usernames', u), { email: emailOf(u), uid: cred.user.uid, ver: 1 });
       b.set(ref('settings', 'main'), { store: 'PharmEase' });
       b.set(ref('settings', 'config'), { categories: DEFAULT_CATEGORIES });
       await b.commit();
@@ -1051,7 +1201,13 @@ if (configured) {
     return {};
   });
 
-  B.login = wrap(async (u, pin) => { await signInWithEmailAndPassword(auth, emailOf(cleanUser(u)), String(pin)); return {}; });
+  B.login = wrap(async (u, pin) => {
+    u = cleanUser(u);
+    let email = emailOf(u);
+    try { const nm = await getDoc(ref('usernames', u)); if (nm.exists() && nm.data().email) email = nm.data().email; } catch (e) {}
+    await signInWithEmailAndPassword(auth, email, String(pin));
+    return {};
+  });
 
   B.logout = wrap(async () => { stopListeners(); await signOut(auth); return true; });
 
@@ -1061,6 +1217,7 @@ if (configured) {
     const snap = await getDoc(ref('users', u.uid));
     if (!snap.exists() || snap.data().active !== true) { await signOut(auth); fail('Your account is not active. Please contact the owner.'); }
     const d = snap.data(), user = { uid: u.uid, username: d.username, name: d.name, role: d.role };
+    if (user.role === 'Owner') getDoc(ref('usernames', user.username)).then(n => { if (!n.exists()) setDoc(ref('usernames', user.username), { email: u.email, uid: u.uid, ver: 1 }).catch(() => {}); }).catch(() => {});
     await startListeners(user);
     let store = 'PharmEase';
     try { const m = await getDoc(ref('settings', 'main')); if (m.exists() && m.data().store) store = m.data().store; } catch (e) {}
@@ -1070,6 +1227,7 @@ if (configured) {
   });
 
   B.changePin = wrap(async o => {
+    ownerOnly();
     const u = auth.currentUser; if (!u) fail('Please sign in again.');
     checkPin(String(o.newPin || ''));
     await reauthenticateWithCredential(u, EmailAuthProvider.credential(u.email, String(o.oldPin || '')));
@@ -1079,8 +1237,15 @@ if (configured) {
 
   B.listUsers = wrap(async () => {
     ownerOnly(); needOnline();
-    const snap = await getDocs(collection(db, 'users'));
-    return snap.docs.map(d => ({ uid: d.id, ...d.data() })).sort(byName);
+    const [us, ns] = await Promise.all([getDocs(collection(db, 'users')), getDocs(collection(db, 'usernames'))]);
+    const map = {}; ns.docs.forEach(d => { map[d.id] = d.data(); });
+    const missing = us.docs.filter(d => !map[d.data().username]);        // accounts made before this feature: record their sign-in name
+    if (missing.length) {
+      const b = writeBatch(db);
+      missing.forEach(d => { const u = d.data().username; map[u] = { email: emailOf(u), uid: d.id, ver: 1 }; b.set(ref('usernames', u), map[u]); });
+      await b.commit();
+    }
+    return us.docs.map(d => ({ uid: d.id, ...d.data() })).filter(x => map[x.username] && map[x.username].uid === x.uid).sort(byName);
   });
 
   B.saveUser = wrap(async o => {
@@ -1089,12 +1254,12 @@ if (configured) {
     checkUser(u, name);
     if (o.isNew) {
       const pin = String(o.pin || ''); checkPin(pin);
-      // A second, temporary connection is used so the owner stays signed in while the new account is created.
-      const app2 = getApps().find(a => a.name === 'creator') || initializeApp(firebaseConfig, 'creator');
-      const auth2 = getAuth(app2);
-      const cred = await createUserWithEmailAndPassword(auth2, emailOf(u), pin);
-      await signOut(auth2);
-      await setDoc(ref('users', cred.user.uid), { username: u, name, role, active: true });
+      if ((await getDoc(ref('usernames', u))).exists()) fail('That username is already taken.');
+      const cred = await makeAccount(emailOf(u), pin);
+      const b = writeBatch(db);
+      b.set(ref('users', cred.user.uid), { username: u, name, role, active: true });
+      b.set(ref('usernames', u), { email: emailOf(u), uid: cred.user.uid, ver: 1 });
+      await b.commit();
     } else {
       const ex = (S.users || []).find(x => x.username === u); if (!ex) fail('User not found.');
       const active = o.active !== false;
@@ -1102,6 +1267,22 @@ if (configured) {
       if (!otherOwners && (role !== 'Owner' || !active)) fail('There must be at least one active Owner.');
       await updateDoc(ref('users', ex.uid), { username: u, name, role, active });
     }
+    return B.listUsers();
+  });
+
+  B.setUserPin = wrap(async o => {
+    ownerOnly(); needOnline();
+    const u = cleanUser(o.username), pin = String(o.newPin || ''); checkPin(pin);
+    if (S.user.username === u) fail('Use "Change my PIN" for your own account.');
+    const ex = (S.users || []).find(x => x.username === u); if (!ex) fail('User not found.');
+    const nm = (await getDoc(ref('usernames', u))).data() || { ver: 1 };
+    const ver = (nm.ver || 1) + 1, email = u + '+' + ver + '@pharmease.app';
+    const cred = await makeAccount(email, pin);
+    const b = writeBatch(db);
+    b.set(ref('users', cred.user.uid), { username: u, name: ex.name, role: ex.role, active: ex.active !== false });
+    b.set(ref('usernames', u), { email, uid: cred.user.uid, ver });
+    b.update(ref('users', ex.uid), { active: false });
+    await b.commit();
     return B.listUsers();
   });
 
@@ -1251,7 +1432,7 @@ if (configured) {
     const soldAt = nowStr(), day = soldAt.slice(0, 10);
     const items = lines.map(l => ({ id: l.id, name: l.name, category: l.category, qty: l.qty, price: l.price, total: l.total }));
     const sale = { soldAt, day, subtotal: sub, discount: disc, discountType: dtype === 'None' ? '' : dtype, discountRef: who, total, method, cash, change,
-      status: 'Completed', cashier: user.name, cashierUid: user.uid, units, items };
+      status: 'Completed', cashier: user.name, cashierUser: user.username, cashierUid: user.uid, units, items };
     const b = writeBatch(db);
     b.set(ref('sales', id), sale);
     lines.forEach(l => b.update(ref('products', l.id), { stock: increment(-l.q) }));
@@ -1265,7 +1446,7 @@ if (configured) {
   B.getSales = wrap(async (from, to) => {
     const u = S.user; if (!u) fail('Please sign in again.');
     const cons = [where('soldAt', '>=', from + ' 00:00:00'), where('soldAt', '<=', to + ' 23:59:59')];
-    if (u.role !== 'Owner') cons.unshift(where('cashierUid', '==', u.uid));
+    if (u.role !== 'Owner') cons.unshift(where('cashierUser', '==', u.username));
     const snap = await getDocs(query(collection(db, 'sales'), ...cons, orderBy('soldAt', 'desc')));
     salesCache = {};
     return snap.docs.map(d => {
@@ -1304,14 +1485,14 @@ if (configured) {
       Object.keys(d.items || {}).forEach(pid => {
         const it = d.items[pid], q = it.qty || 0; if (!q && !it.revenue) return;
         const c = (costMap.get(pid) || 0) * q; dayCost += c; cost += c;
-        const t = top[pid] || (top[pid] = { name: it.name, qty: 0, revenue: 0 }); t.qty += q; t.revenue += it.revenue || 0;
+        const t = top[pid] || (top[pid] = { name: it.name, qty: 0, revenue: 0, profit: 0 }); t.qty += q; t.revenue += it.revenue || 0; t.profit += (it.revenue || 0) - c;
         cats[it.category || 'Others'] = (cats[it.category || 'Others'] || 0) + (it.revenue || 0);
       });
       Object.keys(d.byMethod || {}).forEach(m => { const v = d.byMethod[m]; pay[m] = pay[m] || { total: 0, count: 0 }; pay[m].total += v.total || 0; pay[m].count += v.count || 0; });
       daily.push({ d: d.day, sales: d.sales || 0, profit: (d.sales || 0) - dayCost });
     });
     return { revenue, cost, profit: revenue - cost, count, units, avg: count ? revenue / count : 0, daily,
-      top: Object.values(top).filter(t => t.qty > 0).sort((a, b) => b.qty - a.qty).slice(0, 10),
+      top: Object.values(top).filter(t => t.qty > 0).sort((a, b) => b.qty - a.qty).slice(0, 100),
       cats: Object.keys(cats).map(k => ({ name: k, revenue: cats[k] })).filter(c => c.revenue > 0).sort((a, b) => b.revenue - a.revenue),
       pay: Object.keys(pay).map(k => ({ method: k, total: pay[k].total, count: pay[k].count })),
       invCost: S.products.reduce((s, p) => s + p.stock * p.cost, 0), invRetail: S.products.reduce((s, p) => s + p.stock * p.price, 0) };
