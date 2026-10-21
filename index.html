@@ -174,7 +174,8 @@ tr.click{cursor:pointer}
   .page{padding:18px 16px 40px}
 }
 @media (max-width:560px){
-  .row2{grid-template-columns:1fr}
+  .row2,.row3{grid-template-columns:1fr}
+  .catrow{grid-template-columns:1fr 90px auto auto}
   .stats{grid-template-columns:repeat(2,1fr);gap:10px}
   .stat{padding:12px 14px} .stat b{font-size:20px}
   .ph h1{font-size:22px}
@@ -247,6 +248,16 @@ tr.click{cursor:pointer}
 .minis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:12px}
 .minis div{background:var(--bg);border-radius:10px;padding:10px 12px}
 .minis span{display:block;font-size:12px;color:var(--muted);font-weight:600} .minis b{color:var(--c5)}
+.row3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.catrow{display:grid;grid-template-columns:minmax(0,1fr) 96px auto auto;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.rl{display:grid;grid-template-columns:minmax(170px,2.4fr) 78px 78px 110px 138px 100px 130px 34px;gap:8px;align-items:end;padding:10px 0;border-bottom:1px dashed var(--line)}
+.rl label{display:block;font-size:12px;font-weight:700;color:var(--c5);margin-bottom:3px}
+.rl .np{font-weight:800;color:var(--c4);padding:9px 0;font-size:14px;min-height:42px}
+.rl .np small{display:block;font-weight:600;color:var(--muted);font-size:11px}
+.rl .xb{border:0;background:none;color:var(--red);font-size:18px;padding:9px 0;cursor:pointer}
+.rl .hint{grid-column:1/-1;margin:-4px 0 0}
+.tot{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px;padding:12px 14px;background:var(--bg);border-radius:12px;font-weight:800;color:var(--c5)}
+@media (max-width:1000px){.rl{grid-template-columns:repeat(3,minmax(0,1fr))}.rl .pn{grid-column:1/-1}.rl .xb{justify-self:end}}
 .sfoot #whoami{color:#fff;font-weight:700;font-size:13px}
 .sfoot #whoami small{display:block;color:var(--c1);font-weight:400}
 .signout{margin:8px 0;width:100%;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:8px;padding:7px;font-weight:700}
@@ -343,7 +354,7 @@ tr.click{cursor:pointer}
     <section class="page" id="p-products">
       <div class="ph"><div><h1>Product Management</h1><p>Add and edit your products, prices, and categories.</p></div>
         <div class="tools"><input class="in search" id="prSearch" placeholder="🔍  Search…" oninput="renderProducts()"><button class="btn alt" onclick="openCsv()">Import / Export</button><button class="btn alt" onclick="openCategories()">Categories</button><button class="btn" onclick="openProduct()">+ Add Product</button></div></div>
-      <div class="tw"><table><thead><tr><th>ID</th><th>Product</th><th>Category</th><th>Unit</th><th class="r">Cost</th><th class="r">Price</th><th class="r">Stock</th><th class="r">Actions</th></tr></thead><tbody id="prBody"></tbody></table></div>
+      <div class="tw"><table><thead><tr><th>ID</th><th>Product</th><th>Category</th><th>Unit</th><th class="r">Cost</th><th class="r">Markup</th><th class="r">Price</th><th class="r">Stock</th><th class="r">Actions</th></tr></thead><tbody id="prBody"></tbody></table></div>
     </section>
 
     <!-- Sales -->
@@ -367,6 +378,27 @@ tr.click{cursor:pointer}
       <div id="rptBody"></div>
     </section>
 
+    <!-- Receive stock -->
+    <section class="page" id="p-receive">
+      <div class="ph"><div><h1>Receive Stock</h1><p>Record deliveries from your suppliers. Stock, costs and prices update automatically.</p></div>
+        <div class="tools"><button class="btn" onclick="openReceive()">+ New delivery</button></div></div>
+      <div class="card" id="rcvFormBox" style="display:none;margin-bottom:16px"></div>
+      <div class="tools" style="margin-bottom:12px">
+        <input class="in" type="date" id="dFrom" style="width:auto"><span>to</span><input class="in" type="date" id="dTo" style="width:auto">
+        <select class="in" id="dSup" style="width:auto"></select><input class="in" id="dPer" placeholder="Delivered by…" style="width:170px">
+        <button class="btn sm" onclick="loadReceivings()">Show</button><button class="btn alt sm" onclick="exportDeliveries()">⬇ Export</button></div>
+      <div class="stats" id="rcvStats"></div>
+      <div class="tw"><table><thead><tr><th>Date</th><th>Supplier</th><th>Ref no.</th><th>Delivered by</th><th class="r">Units</th><th class="r">Total</th><th>Payment</th><th class="r"></th></tr></thead><tbody id="rcvBody"></tbody></table></div>
+    </section>
+
+    <!-- Suppliers -->
+    <section class="page" id="p-suppliers">
+      <div class="ph"><div><h1>Suppliers</h1><p>Who you buy from, and how much you still owe each one.</p></div>
+        <div class="tools"><button class="btn" onclick="openSupplier()">+ Add Supplier</button></div></div>
+      <div class="stats" id="supStats"></div>
+      <div class="tw"><table><thead><tr><th>Supplier</th><th>Type</th><th>Contact</th><th class="r">Unpaid balance</th><th>Last delivery</th><th class="r">Actions</th></tr></thead><tbody id="supBody"></tbody></table></div>
+    </section>
+
     <!-- Users -->
     <section class="page" id="p-users">
       <div class="ph"><div><h1>Users &amp; Access</h1><p>Create staff accounts. Everyone signs in with a username and a PIN.</p></div>
@@ -387,13 +419,15 @@ tr.click{cursor:pointer}
 
 <script>
 /* ---------- State & helpers ---------- */
-const S = { products: [], cats: [], cart: [], q: '', cat: 'All', method: 'Cash', store: '', token: '', user: null, vat: 0.12, sp: 0.2, users: [], offline: false, pending: 0, syncing: false };
+const S = { products: [], cats: [], cart: [], q: '', cat: 'All', method: 'Cash', store: '', token: '', user: null, vat: 0.12, sp: 0.2, users: [], suppliers: [], catMk: {}, rcv: [], rcvMap: {}, offline: false, pending: 0, syncing: false };
 const isOwner = () => !!S.user && S.user.role === 'Owner';
 const MENU = [
   { id:'pos', ic:'🛒', t:'POS / Checkout', s:'Make a sale' },
   { id:'inventory', ic:'📦', t:'Inventory', s:'Live stock levels' },
   { id:'low', ic:'⚠️', t:'Low Stock', s:'Items to restock' },
   { id:'products', ic:'💊', t:'Products', s:'Prices & categories', own:1 },
+  { id:'receive', ic:'🚚', t:'Receive Stock', s:'Deliveries from suppliers', own:1 },
+  { id:'suppliers', ic:'🏭', t:'Suppliers', s:'Contacts & unpaid balances', own:1 },
   { id:'sales', ic:'🧾', t:'Sales Records', s:'Past transactions' },
   { id:'reports', ic:'📊', t:'Reports', s:'Business overview', own:1 },
   { id:'users', ic:'🔑', t:'Users & Access', s:'Staff accounts', own:1 }
@@ -457,14 +491,14 @@ function go(id) {
   cur = id; toggleMenu(false); cartSheet(false);
   MENU.forEach(m => { const b = $('m-' + m.id); if (b) b.classList.toggle('on', m.id === id); $('p-' + m.id).classList.toggle('on', m.id === id); });
   $('topTitle').textContent = MENU.find(m => m.id === id).t;
-  ({ pos: renderPOS, inventory: renderInventory, low: renderLow, products: renderProducts, sales: () => { if (!$('sFrom').value) presetSales('today'); else loadSales(); }, reports: () => { if (!$('rFrom').value) presetRep('week'); else loadReport(); }, users: loadUsers })[id]();
+  ({ pos: renderPOS, inventory: renderInventory, low: renderLow, products: renderProducts, sales: () => { if (!$('sFrom').value) presetSales('today'); else loadSales(); }, reports: () => { if (!$('rFrom').value) presetRep('week'); else loadReport(); }, receive: loadReceivings, suppliers: renderSuppliers, users: loadUsers })[id]();
   document.querySelector('.main').scrollTop = 0; updateBar();
   if (id === 'pos') $('posSearch').focus();
 }
 function refreshAll() {
   const low = S.products.filter(p => p.stock <= p.reorder).length;
   const b = $('lowBadge'); b.style.display = low ? '' : 'none'; b.textContent = low;
-  const fn = { pos: renderPOS, inventory: renderInventory, low: renderLow, products: renderProducts }[cur];
+  const fn = { pos: renderPOS, inventory: renderInventory, low: renderLow, products: renderProducts, suppliers: renderSuppliers }[cur];
   if (fn) fn();
 }
 function setProducts(list) { S.products = list; refreshAll(); }
@@ -615,6 +649,7 @@ function openStock(id, mode) {
 }
 
 /* ---------- Low stock ---------- */
+function supSub(p) { if (!isOwner() || !p.supplierId) return ''; const x = S.suppliers.find(y => y.id === p.supplierId); return x ? '<div class="sub">Supplier: ' + esc(x.name) + '</div>' : ''; }
 function renderLow() {
   const low = S.products.filter(p => p.stock <= p.reorder).sort((a, b) => a.stock - b.stock);
   const out = low.filter(p => p.stock <= 0).length, exp = S.products.filter(p => { const e = expInfo(p); return e && e.d <= 90; });
@@ -622,7 +657,7 @@ function renderLow() {
   let h = '';
   h += low.length ? '<div class="tw" id="restockList"><table><thead><tr><th>Product</th><th>Category</th><th class="r">In stock</th><th class="r">Reorder at</th><th class="r">Suggested order</th><th>Status</th><th class="r"></th></tr></thead><tbody>' + low.map(p => {
     const s = stockInfo(p), sug = Math.max(p.reorder * 2 - p.stock, 1);
-    return '<tr><td><b>' + esc(p.name) + '</b></td><td>' + esc(p.category) + '</td><td class="r"><b>' + p.stock + '</b></td><td class="r">' + p.reorder + '</td><td class="r"><b>' + sug + ' ' + esc(p.unit) + '</b></td><td><span class="tag ' + s.c + '">' + s.t + '</span></td><td class="r">' + (isOwner() ? '<button class="btn sm ok" onclick="openStock(\'' + p.id + '\',\'add\')">+ Restock</button>' : '') + '</td></tr>';
+    return '<tr><td><b>' + esc(p.name) + '</b>' + supSub(p) + '</td><td>' + esc(p.category) + '</td><td class="r"><b>' + p.stock + '</b></td><td class="r">' + p.reorder + '</td><td class="r"><b>' + sug + ' ' + esc(p.unit) + '</b></td><td><span class="tag ' + s.c + '">' + s.t + '</span></td><td class="r">' + (isOwner() ? '<button class="btn sm ok" onclick="openStock(\'' + p.id + '\',\'add\')">+ Restock</button>' : '') + '</td></tr>';
   }).join('') + '</tbody></table></div>' : '<div class="card empty"><b>All good! 🎉</b>Nothing needs restocking right now.</div>';
   if (exp.length) h += '<h3 style="margin:22px 0 10px;color:var(--c5)">Check these expiry dates</h3><div class="tw"><table><thead><tr><th>Product</th><th class="r">In stock</th><th>Expiry</th></tr></thead><tbody>' + exp.sort((a, b) => a.expiry.localeCompare(b.expiry)).map(p => { const e = expInfo(p); return '<tr><td><b>' + esc(p.name) + '</b></td><td class="r">' + p.stock + '</td><td><span class="tag ' + e.c + '">' + esc(e.t) + '</span> <span class="sub">' + p.expiry + '</span></td></tr>'; }).join('') + '</tbody></table></div>';
   $('lowBox').innerHTML = h;
@@ -635,47 +670,85 @@ function printRestock() {
 }
 
 /* ---------- Products ---------- */
+function mkText(p) {
+  const cm = S.catMk[p.category], eff = p.markup != null ? p.markup : (cm != null && cm !== '' ? +cm : null);
+  if (p.auto && eff != null) return '<b>' + eff + '%</b><div class="sub">' + (p.markup != null ? 'own markup' : 'category default') + '</div>';
+  const imp = p.cost > 0 ? Math.round((p.price - p.cost) / p.cost * 1000) / 10 : null;
+  return (imp === null ? '—' : imp + '%') + '<div class="sub">price set by hand</div>';
+}
 function renderProducts() {
   const q = $('prSearch').value.trim().toLowerCase();
   const l = S.products.filter(p => !q || (p.name + ' ' + p.generic + ' ' + p.category + ' ' + p.id + ' ' + p.barcode).toLowerCase().includes(q));
-  $('prBody').innerHTML = l.length ? l.map(p => '<tr><td class="sub">' + p.id + '</td><td><b>' + esc(p.name) + '</b><div class="sub">' + esc(p.generic) + '</div>' + (p.barcode ? '<div class="sub">Barcode: ' + esc(p.barcode) + '</div>' : '') + '</td><td>' + esc(p.category) + '</td><td>' + esc(p.unit) + '</td><td class="r">' + peso(p.cost) + '</td><td class="r"><b>' + peso(p.price) + '</b></td><td class="r">' + p.stock + '</td><td class="r"><button class="btn sm alt" onclick="openProduct(\'' + p.id + '\')">Edit</button> <button class="btn sm danger" onclick="delProduct(\'' + p.id + '\')">Delete</button></td></tr>').join('')
-    : '<tr><td colspan="8"><div class="empty"><b>No products found</b>Click “+ Add Product” to add your first item.</div></td></tr>';
+  $('prBody').innerHTML = l.length ? l.map(p => '<tr><td class="sub">' + p.id + '</td><td><b>' + esc(p.name) + '</b><div class="sub">' + esc(p.generic) + '</div>' + (p.barcode ? '<div class="sub">Barcode: ' + esc(p.barcode) + '</div>' : '') + '</td><td>' + esc(p.category) + '</td><td>' + esc(p.unit) + '</td><td class="r">' + peso(p.cost) + '</td><td class="r">' + mkText(p) + '</td><td class="r"><b>' + peso(p.price) + '</b></td><td class="r">' + p.stock + '</td><td class="r"><button class="btn sm alt" onclick="openProduct(\'' + p.id + '\')">Edit</button> <button class="btn sm danger" onclick="delProduct(\'' + p.id + '\')">Delete</button></td></tr>').join('')
+    : '<tr><td colspan="9"><div class="empty"><b>No products found</b>Click “+ Add Product” to add your first item.</div></td></tr>';
 }
 function openProduct(id) {
-  const p = id ? prod(id) : { name: '', generic: '', category: S.cats[0], unit: 'tablet', cost: '', price: '', stock: '', reorder: 10, expiry: '', barcode: '', vatExempt: false };
+  const p = id ? prod(id) : { name: '', generic: '', category: S.cats[0], unit: 'tablet', cost: '', markup: null, auto: true, price: '', stock: '', reorder: 10, expiry: '', barcode: '', vatExempt: false, supplierId: '' };
+  const over = id ? !p.auto : false;
   openModal(id ? 'Edit product' : 'Add product',
     '<div class="fg"><label class="f">Product name *</label><input class="in" id="fName" value="' + esc(p.name) + '" placeholder="e.g. Biogesic 500mg"></div>' +
     '<div class="fg"><label class="f">Generic name</label><input class="in" id="fGen" value="' + esc(p.generic) + '" placeholder="e.g. Paracetamol"></div>' +
     '<div class="fg"><label class="f">Barcode (optional)</label><input class="in" id="fBar" value="' + esc(p.barcode) + '" placeholder="Scan or type the barcode"></div>' +
-    '<div class="row2"><div class="fg"><label class="f">Category</label><select class="in" id="fCat">' + catOptions(p.category) + '</select></div>' +
+    '<div class="row2"><div class="fg"><label class="f">Category</label><select class="in" id="fCat" onchange="pfCalc()">' + catOptions(p.category) + '</select></div>' +
     '<div class="fg"><label class="f">Unit</label><input class="in" id="fUnit" list="units" value="' + esc(p.unit) + '"><datalist id="units"><option>tablet<option>capsule<option>bottle<option>box<option>sachet<option>tube<option>pc</datalist></div></div>' +
-    '<div class="row2"><div class="fg"><label class="f">Cost (₱)</label><input class="in" id="fCost" type="number" min="0" step="0.01" value="' + p.cost + '"><div class="hint">What you pay the supplier</div></div>' +
-    '<div class="fg"><label class="f">Selling price (₱) *</label><input class="in" id="fPrice" type="number" min="0" step="0.01" value="' + p.price + '"></div></div>' +
+    '<div class="card" style="background:var(--bg);margin-bottom:14px;padding:14px"><div class="row3"><div class="fg" style="margin:0"><label class="f">Cost (₱) *</label><input class="in" id="fCost" type="number" min="0" step="0.01" value="' + p.cost + '" oninput="pfCalc()"></div>' +
+    '<div class="fg" style="margin:0"><label class="f">Markup %</label><input class="in" id="fMk" type="number" min="0" step="0.01" value="' + (p.markup == null ? '' : p.markup) + '" oninput="pfCalc()"></div>' +
+    '<div class="fg" style="margin:0"><label class="f">Selling price (₱) *</label><input class="in" id="fPrice" type="number" min="0" step="0.01" value="' + p.price + '" oninput="pfCalc()"></div></div>' +
+    '<label class="chk" style="margin:10px 0 0"><input type="checkbox" id="fOver"' + (over ? ' checked' : '') + ' onchange="pfCalc()"> Set the selling price myself (override)</label><div class="hint" id="pfHint"></div></div>' +
+    '<div class="fg"><label class="f">Usual supplier (optional)</label><select class="in" id="fSup"><option value="">— none —</option>' + S.suppliers.filter(x => x.active !== false || x.id === p.supplierId).map(x => '<option value="' + x.id + '"' + (x.id === p.supplierId ? ' selected' : '') + '>' + esc(x.name) + '</option>').join('') + '</select></div>' +
     '<div class="row2">' + (id ? '' : '<div class="fg"><label class="f">Starting stock</label><input class="in" id="fStock" type="number" min="0" step="1" value="' + p.stock + '"></div>') +
     '<div class="fg"><label class="f">Reorder level</label><input class="in" id="fRe" type="number" min="0" step="1" value="' + p.reorder + '"><div class="hint">Warn me when stock reaches this number</div></div></div>' +
-    '<div class="fg"><label style="display:flex;gap:8px;align-items:center;font-weight:700"><input type="checkbox" id="fVat"' + (p.vatExempt ? ' checked' : '') + ' style="width:20px;height:20px"> VAT-exempt product</label><div class="hint">Tick this if the product is exempt from VAT. It is used when computing Senior Citizen and PWD discounts.</div></div>' +
+    '<label class="chk"><input type="checkbox" id="fVat"' + (p.vatExempt ? ' checked' : '') + '> VAT-exempt product</label><div class="hint" style="margin:-6px 0 14px">Tick this if the product is exempt from VAT. It is used when computing Senior Citizen and PWD discounts.</div>' +
     '<div class="fg"><label class="f">Expiry date (optional)</label><input class="in" id="fExp" type="date" value="' + esc(p.expiry) + '">' + (id ? '<div class="hint">To change stock, use Inventory → Adjust.</div>' : '') + '</div>',
-    '<button class="btn alt" onclick="closeModal()">Cancel</button><button class="btn" id="pSave">Save product</button>');
-  $('fName').focus();
-  $('pSave').onclick = async () => {
-    try {
-      const r = await run('saveProduct', { id: id || '', name: $('fName').value, generic: $('fGen').value, category: $('fCat').value, unit: $('fUnit').value, cost: $('fCost').value, price: $('fPrice').value, stock: id ? 0 : $('fStock').value, reorder: $('fRe').value, expiry: $('fExp').value, barcode: $('fBar').value, vatExempt: $('fVat').checked });
-      closeModal(); setProducts(r); toast('Product saved ✔');
-    } catch (e) {}
+    '<button class="btn alt" onclick="closeModal()">Cancel</button><button class="btn" id="pSave">Save product</button>', true);
+  pfCalc(); $('fName').focus();
+  $('pSave').onclick = () => {
+    const pay = { id: id || '', name: $('fName').value, generic: $('fGen').value, category: $('fCat').value, unit: $('fUnit').value, cost: $('fCost').value, markup: $('fMk').value, auto: !$('fOver').checked,
+      price: $('fPrice').value, supplierId: $('fSup').value, stock: id ? 0 : $('fStock').value, reorder: $('fRe').value, expiry: $('fExp').value, barcode: $('fBar').value, vatExempt: $('fVat').checked };
+    const send = async () => { try { const r = await run('saveProduct', pay); closeModal(); setProducts(r); toast('Product saved ✔'); } catch (e) {} };
+    if (pay.price !== '' && pay.cost !== '' && +pay.price < +pay.cost && !pay.auto) confirmBox('The selling price (' + peso(pay.price) + ') is lower than the cost (' + peso(pay.cost) + '). Save it anyway as a clearance price?', 'Save anyway', send);
+    else send();
   };
 }
+/* live price: cost + markup % = selling price, to the centavo */
+function pfCalc() {
+  const cost = $('fCost').value, mk = $('fMk').value.trim(), cat = $('fCat').value, over = $('fOver').checked, cm = S.catMk[cat];
+  const dflt = cm != null && cm !== '' ? +cm : null, eff = mk !== '' ? +mk : dflt;
+  $('fMk').placeholder = dflt !== null ? 'Category default ' + dflt + '%' : 'e.g. 10';
+  $('fPrice').readOnly = !over;
+  if (!over) $('fPrice').value = (cost !== '' && eff !== null && eff >= 0) ? (Math.round(+cost * (1 + eff / 100) * 100) / 100).toFixed(2) : '';
+  const price = $('fPrice').value;
+  let h = '';
+  if (!over && eff === null) h = 'Enter a markup % (or set a default markup for this category) to work out the price.';
+  else if (cost !== '' && price !== '' && +cost >= 0) {
+    const profit = Math.round((+price - +cost) * 100) / 100;
+    h = (+price < +cost ? '<span style="color:var(--red);font-weight:700">Below cost! </span>' : '') + 'Profit per item: <b>' + peso(profit) + '</b>' + (+cost > 0 ? ' · markup ' + Math.round(profit / +cost * 1000) / 10 + '%' : '') + (+price > 0 ? ' · margin ' + Math.round(profit / +price * 1000) / 10 + '%' : '');
+    if (!over) h = peso(cost) + ' + ' + eff + '% = <b>' + peso(price) + '</b> · ' + h;
+  }
+  $('pfHint').innerHTML = h;
+}
+
 function delProduct(id) {
   const p = prod(id);
   confirmBox('Delete <b>' + esc(p.name) + '</b>? Past sales records will be kept.', 'Delete', async () => { try { setProducts(await run('deleteProduct', id)); toast('Product deleted'); } catch (e) {} });
 }
 function openCategories() {
   const draw = () => {
-    $('mBody').innerHTML = '<div style="display:flex;gap:8px;margin-bottom:14px"><input class="in" id="nCat" placeholder="New category name"><button class="btn" id="aCat">Add</button></div>' +
-      S.cats.map(c => '<div class="tl" style="padding:8px 0;border-bottom:1px solid var(--line)"><span>' + esc(c) + ' <span class="sub">(' + S.products.filter(p => p.category === c).length + ')</span></span><button class="btn sm danger" data-c="' + esc(c) + '">Delete</button></div>').join('');
-    $('aCat').onclick = async () => { try { S.cats = await run('addCategory', $('nCat').value); draw(); toast('Category added ✔'); } catch (e) {} };
+    $('mBody').innerHTML = '<div style="display:grid;grid-template-columns:1fr 110px auto;gap:8px;margin-bottom:6px"><input class="in" id="nCat" placeholder="New category name"><input class="in" id="nMk" type="number" min="0" step="0.01" placeholder="Markup %"><button class="btn" id="aCat">Add</button></div>' +
+      '<div class="hint" style="margin-bottom:12px">The default markup is used for products in a category that have no markup of their own (for example, 100 for all Generic items). Leave it blank for none.</div>' +
+      S.cats.map(c => { const v = S.catMk[c]; return '<div class="catrow"><span>' + esc(c) + ' <span class="sub">(' + S.products.filter(x => x.category === c).length + ')</span></span><input class="in" type="number" min="0" step="0.01" placeholder="Markup %" value="' + (v == null ? '' : v) + '" data-mk="' + esc(c) + '" aria-label="Default markup for ' + esc(c) + '"><button class="btn sm alt" data-save="' + esc(c) + '">Save</button><button class="btn sm danger" data-c="' + esc(c) + '">Delete</button></div>'; }).join('');
+    $('aCat').onclick = async () => { try { const name = $('nCat').value, mk = $('nMk').value; S.cats = await run('addCategory', name); if (mk !== '') await run('setCategoryMarkup', name.trim(), mk); draw(); toast('Category added ✔'); } catch (e) {} };
     $('mBody').querySelectorAll('[data-c]').forEach(b => b.onclick = async () => { try { S.cats = await run('deleteCategory', b.dataset.c); draw(); } catch (e) {} });
+    $('mBody').querySelectorAll('[data-save]').forEach(b => b.onclick = async () => {
+      const c = b.dataset.save, v = [...$('mBody').querySelectorAll('[data-mk]')].find(x => x.dataset.mk === c).value;
+      try {
+        await run('setCategoryMarkup', c, v); const n = await run('countCategoryAuto', c);
+        if (v !== '' && n) confirmBox('Update the prices of <b>' + n + '</b> product' + (n > 1 ? 's' : '') + ' in “' + esc(c) + '” that use this default markup now?', 'Update prices', async () => { try { await run('applyCategoryMarkup', c); toast('Prices updated ✔'); } catch (e) {} openCategories(); });
+        else { toast('Saved ✔'); draw(); }
+      } catch (e) {}
+    });
   };
-  openModal('Categories', '', '<button class="btn" onclick="closeModal();$(\'invCat\').innerHTML=\'\';refreshAll()">Done</button>'); draw();
+  openModal('Categories & default markup', '', '<button class="btn" onclick="closeModal();$(\'invCat\').innerHTML=\'\';refreshAll()">Done</button>'); draw();
 }
 
 /* ---------- Sales records ---------- */
@@ -771,10 +844,18 @@ function renderReport() {
     '<div class="card" style="margin-bottom:16px"><h3>Top selling items</h3>' +
     '<div class="chips noprint" id="topSw" style="margin:0 0 10px"><button class="chip" data-m="qty" onclick="setTop(\'qty\')">By quantity</button><button class="chip" data-m="revenue" onclick="setTop(\'revenue\')">By sales</button><button class="chip" data-m="profit" onclick="setTop(\'profit\')">By profit</button></div>' +
     '<div class="tw"><table style="min-width:520px"><thead><tr><th class="c">#</th><th>Item</th><th class="r">Qty sold</th><th class="r">Sales</th><th class="r">Profit</th><th class="r">Share</th></tr></thead><tbody id="topBody"></tbody></table></div></div>' +
+    '<div class="card" style="margin-bottom:16px"><h3>Profit margin by item</h3><div class="tools noprint" style="margin-bottom:10px"><select class="in" id="mgCat" style="width:auto" onchange="renderMargin()"><option value="All">All categories</option>' + S.cats.map(c => '<option>' + esc(c) + '</option>').join('') + '</select><select class="in" id="mgSort" style="width:auto" onchange="renderMargin()"><option value="low">Lowest margin first</option><option value="high">Highest margin first</option><option value="profit">Highest profit per item</option></select></div>' +
+    '<div class="tw"><table style="min-width:640px"><thead><tr><th>Item</th><th>Category</th><th class="r">Cost</th><th class="r">Price</th><th class="r">Profit / item</th><th class="r">Margin</th><th class="r">Markup</th></tr></thead><tbody id="mgBody"></tbody></table></div></div>' +
     '<div class="cols"><div class="card"><h3>Sales by category</h3>' + (r.cats.length ? r.cats.map(c => hb(c.name, c.revenue, maxC, peso(c.revenue))).join('') : '<div class="sub">No data yet.</div>') + '</div>' +
     '<div class="card"><h3>Payment methods</h3>' + (r.pay.length ? '<table style="min-width:0">' + r.pay.map(x => '<tr><td><b>' + esc(x.method) + '</b></td><td class="r">' + x.count + ' sales</td><td class="r"><b>' + peso(x.total) + '</b></td></tr>').join('') + '</table>' : '<div class="sub">No data yet.</div>') + '</div>' +
     '<div class="card"><h3>Inventory value (right now)</h3><div class="tl"><span>At cost</span><b>' + peso(r.invCost) + '</b></div><div class="tl"><span>At selling price</span><b>' + peso(r.invRetail) + '</b></div><div class="tl"><span>Possible profit if all sold</span><b>' + peso(r.invRetail - r.invCost) + '</b></div></div></div>';
-  renderTop();
+  renderTop(); renderMargin();
+}
+function renderMargin() {
+  const c = $('mgCat').value, so = $('mgSort').value;
+  const l = S.products.filter(p => c === 'All' || p.category === c).map(p => ({ p, profit: Math.round((p.price - p.cost) * 100) / 100, mg: p.price > 0 ? (p.price - p.cost) / p.price * 100 : 0, mk: p.cost > 0 ? (p.price - p.cost) / p.cost * 100 : null }));
+  l.sort((a, b) => so === 'high' ? b.mg - a.mg : so === 'profit' ? b.profit - a.profit : a.mg - b.mg);
+  $('mgBody').innerHTML = l.length ? l.map(x => '<tr><td><b>' + esc(x.p.name) + '</b></td><td>' + esc(x.p.category) + '</td><td class="r">' + peso(x.p.cost) + '</td><td class="r">' + peso(x.p.price) + '</td><td class="r" style="' + (x.profit < 0 ? 'color:var(--red);font-weight:800' : '') + '">' + peso(x.profit) + '</td><td class="r"><b>' + Math.round(x.mg * 10) / 10 + '%</b></td><td class="r">' + (x.mk === null ? '—' : Math.round(x.mk * 10) / 10 + '%') + '</td></tr>').join('') : '<tr><td colspan="7"><div class="empty"><b>No products</b></div></td></tr>';
 }
 function renderTop() {
   const m = TOPM, r = REP.r;
@@ -839,10 +920,10 @@ function downloadCsv(name, rows) {
   a.href = URL.createObjectURL(new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' }));
   a.download = name; document.body.appendChild(a); a.click(); a.remove();
 }
-const CSV_HEAD = ['name', 'generic', 'category', 'unit', 'cost', 'price', 'stock', 'reorder', 'expiry', 'barcode', 'vat_exempt'];
-function downloadTemplate() { downloadCsv('pharmease-products-template.csv', [CSV_HEAD, ['Biogesic 500mg', 'Paracetamol', 'Pain & Fever', 'tablet', '2.50', '5.00', '200', '50', '2027-12-31', '4800000000000', 'no']]); }
+const CSV_HEAD = ['name', 'generic', 'category', 'unit', 'cost', 'markup', 'price', 'stock', 'reorder', 'expiry', 'barcode', 'vat_exempt'];
+function downloadTemplate() { downloadCsv('pharmease-products-template.csv', [CSV_HEAD, ['Biogesic 500mg', 'Paracetamol', 'Pain & Fever', 'tablet', '2.50', '100', '', '200', '50', '2027-12-31', '4800000000000', 'no']]); }
 function exportProducts() {
-  downloadCsv('pharmease-products-' + ymd(new Date()) + '.csv', [CSV_HEAD].concat(S.products.map(p => [p.name, p.generic, p.category, p.unit, p.cost, p.price, p.stock, p.reorder, p.expiry, p.barcode, p.vatExempt ? 'yes' : 'no'])));
+  downloadCsv('pharmease-products-' + ymd(new Date()) + '.csv', [CSV_HEAD].concat(S.products.map(p => [p.name, p.generic, p.category, p.unit, p.cost, p.markup == null ? '' : p.markup, p.price, p.stock, p.reorder, p.expiry, p.barcode, p.vatExempt ? 'yes' : 'no'])));
 }
 function exportSales() {
   if (!isOwner()) return toast('Only the owner can export sales.', true);
@@ -854,7 +935,7 @@ function openCsv() {
   openModal('Import / Export products',
     '<p style="margin-top:0">Bring your product list in from Excel or Google Sheets, or save a copy of it.</p>' +
     '<div class="fg"><button class="btn alt" onclick="downloadTemplate()">1. Download the CSV template</button></div>' +
-    '<div class="fg"><label class="f">2. Choose your filled-in CSV file</label><input class="in" type="file" id="csvFile" accept=".csv,text/csv"><div class="hint">Columns: name, generic, category, unit, cost, price, stock, reorder, expiry (YYYY-MM-DD), barcode, vat_exempt (yes/no). Products whose name or barcode already exist are skipped. Needs an internet connection.</div></div>' +
+    '<div class="fg"><label class="f">2. Choose your filled-in CSV file</label><input class="in" type="file" id="csvFile" accept=".csv,text/csv"><div class="hint">Columns: name, generic, category, unit, cost, markup, price, stock, reorder, expiry (YYYY-MM-DD), barcode, vat_exempt (yes/no). Leave <b>price</b> blank to have it worked out from the markup % (or the category default). Products whose name or barcode already exist are skipped. Needs an internet connection.</div></div>' +
     '<div class="fg"><button class="btn alt" onclick="exportProducts()">Export current products to CSV</button></div>',
     '<button class="btn alt" onclick="closeModal()">Close</button><button class="btn" id="csvGo">Import file</button>');
   $('csvGo').onclick = async () => {
@@ -956,9 +1037,16 @@ function renderUsers() {
   $('storeIn').value = S.store || '';
   $('usBody').innerHTML = S.users.map(u => {
     const me = S.user && u.username === S.user.username;
-    return '<tr><td><b>' + esc(u.name) + '</b>' + (me ? ' <span class="sub">(you)</span>' : '') + '</td><td>' + esc(u.username) + '</td><td>' + esc(u.role) + '</td><td><span class="tag ' + (u.active ? 'green' : 'gray') + '">' + (u.active ? 'Active' : 'Disabled') + '</span></td><td class="r"><button class="btn sm alt" onclick="openUser(\'' + esc(u.username) + '\')">Edit</button> <button class="btn sm" onclick="openPinFor(\'' + esc(u.username) + '\')">Change PIN</button></td></tr>';
+    return '<tr><td><b>' + esc(u.name) + '</b>' + (me ? ' <span class="sub">(you)</span>' : '') + '</td><td>' + esc(u.username) + '</td><td>' + esc(u.role) + '</td><td><span class="tag ' + (u.active ? 'green' : 'gray') + '">' + (u.active ? 'Active' : 'Disabled') + '</span></td><td class="r"><button class="btn sm alt" onclick="openUser(\'' + esc(u.username) + '\')">Edit</button> <button class="btn sm" onclick="openPinFor(\'' + esc(u.username) + '\')">Change PIN</button>' + (me ? '' : ' <button class="btn sm danger" onclick="delUser(\'' + esc(u.username) + '\')">Delete</button>') + '</td></tr>';
   }).join('');
 }
+function delUser(username) {
+  const u = S.users.find(x => x.username === username); if (!u) return;
+  confirmBox('Delete <b>' + esc(u.name) + '</b>? They will no longer be able to sign in. Their past sales stay in the records. This cannot be undone.', 'Delete user', async () => {
+    try { S.users = await run('deleteUser', username); renderUsers(); toast('User deleted'); } catch (e) {}
+  });
+}
+
 function openPinFor(username) { if (S.user && username === S.user.username) openPin(); else openSetPin(username); }
 function openSetPin(username) {
   const u = S.users.find(x => x.username === username); if (!u) return;
@@ -990,6 +1078,192 @@ function openUser(username) {
     } catch (e) {}
   };
 }
+/* ---------- Suppliers ---------- */
+const SUP_TYPES = ['Wholesale', 'Direct from company', 'Local distributor', 'Walk-in purchase'];
+const cents = n => Math.round((+n || 0) * 100) / 100;
+function renderSuppliers() {
+  const owed = S.suppliers.reduce((a, x) => a + (+x.balance || 0), 0), withBal = S.suppliers.filter(x => x.balance > 0.004).length;
+  $('supStats').innerHTML = '<div class="stat ' + (owed > 0.004 ? 'amber' : 'green') + '"><span>Total unpaid to suppliers</span><b>' + peso(owed) + '</b></div><div class="stat"><span>Suppliers with a balance</span><b>' + withBal + '</b></div><div class="stat"><span>Active suppliers</span><b>' + S.suppliers.filter(x => x.active !== false).length + '</b></div>';
+  $('supBody').innerHTML = S.suppliers.length ? S.suppliers.map(x => '<tr' + (x.active === false ? ' style="opacity:.6"' : '') + '><td><b>' + esc(x.name) + '</b>' + (x.active === false ? ' <span class="tag gray">Inactive</span>' : '') + '</td><td>' + esc(x.type) + '</td><td>' + esc(x.contactPerson || '—') + (x.contactNumber ? '<div class="sub">' + esc(x.contactNumber) + '</div>' : '') + '</td><td class="r">' + (x.balance > 0.004 ? '<b style="color:var(--red)">' + peso(x.balance) + '</b>' : '<span class="sub">Fully paid</span>') + '</td><td>' + esc(x.lastDelivery || '—') + '</td><td class="r"><button class="btn sm alt" onclick="openStatement(\'' + x.id + '\')">Statement</button> ' + (x.balance > 0.004 ? '<button class="btn sm ok" onclick="openPay(\'' + x.id + '\')">Pay</button> ' : '') + '<button class="btn sm alt" onclick="openSupplier(\'' + x.id + '\')">Edit</button> <button class="btn sm danger" onclick="toggleSupplier(\'' + x.id + '\')">' + (x.active === false ? 'Activate' : 'Deactivate') + '</button></td></tr>').join('')
+    : '<tr><td colspan="6"><div class="empty"><b>No suppliers yet</b>Click “+ Add Supplier” to add the first one.</div></td></tr>';
+}
+function openSupplier(id) {
+  const x = id ? S.suppliers.find(y => y.id === id) : { name: '', type: 'Local distributor', contactPerson: '', contactNumber: '', address: '' };
+  openModal(id ? 'Edit supplier' : 'Add supplier',
+    '<div class="fg"><label class="f">Supplier name / source *</label><input class="in" id="supName" value="' + esc(x.name) + '" placeholder="e.g. Puregold Wholesale, Nestle Direct"></div>' +
+    '<div class="fg"><label class="f">Type</label><select class="in" id="supType">' + SUP_TYPES.map(t => '<option' + (t === x.type ? ' selected' : '') + '>' + t + '</option>').join('') + '</select></div>' +
+    '<div class="row2"><div class="fg"><label class="f">Contact person</label><input class="in" id="supPerson" value="' + esc(x.contactPerson) + '"></div><div class="fg"><label class="f">Contact number</label><input class="in" id="supPhone" inputmode="tel" value="' + esc(x.contactNumber) + '"></div></div>' +
+    '<div class="fg"><label class="f">Address</label><input class="in" id="supAddr" value="' + esc(x.address) + '"></div>',
+    '<button class="btn alt" onclick="closeModal()">Cancel</button><button class="btn" id="supSave">Save supplier</button>');
+  $('supName').focus();
+  $('supSave').onclick = async () => { try { await run('saveSupplier', { id: id || '', name: $('supName').value, type: $('supType').value, contactPerson: $('supPerson').value, contactNumber: $('supPhone').value, address: $('supAddr').value }); closeModal(); toast('Supplier saved ✔'); } catch (e) {} };
+}
+function toggleSupplier(id) {
+  const x = S.suppliers.find(y => y.id === id); if (!x) return;
+  const go = async () => { try { await run('setSupplierActive', id, x.active === false); toast(x.active === false ? 'Supplier activated' : 'Supplier deactivated'); } catch (e) {} };
+  if (x.active !== false && x.balance > 0.004) confirmBox('<b>' + esc(x.name) + '</b> still has an unpaid balance of ' + peso(x.balance) + '. Deactivate anyway? You can still record payments to them later.', 'Deactivate', go); else go();
+}
+const payTag = r => {
+  if (r.status === 'Void') return '<span class="tag gray">Void</span>';
+  const due = cents(r.total - r.paid);
+  if (due <= 0.004) return '<span class="tag green">Paid</span>';
+  const late = r.dueDate && r.dueDate < ymd(new Date());
+  return '<span class="tag ' + (late ? 'red' : (r.paid > 0 ? 'amber' : 'red')) + '">' + (late ? 'Overdue' : (r.paid > 0 ? 'Partial' : 'Unpaid')) + '</span>' + (r.dueDate ? '<div class="sub">due ' + esc(r.dueDate) + '</div>' : '');
+};
+async function openStatement(id) {
+  const x = S.suppliers.find(y => y.id === id); if (!x) return;
+  try {
+    const l = await run('supplierReceivings', id); l.forEach(r => S.rcvMap[r.id] = r);
+    const live = l.filter(r => r.status !== 'Void');
+    openModal('Statement — ' + x.name,
+      '<div class="stats" style="margin-bottom:12px"><div class="stat ' + (x.balance > 0.004 ? 'amber' : 'green') + '"><span>Unpaid balance</span><b>' + peso(x.balance) + '</b></div><div class="stat"><span>Total purchased</span><b>' + peso(live.reduce((a, r) => a + r.total, 0)) + '</b></div></div>' +
+      (l.length ? '<div style="overflow:auto"><table style="min-width:520px"><thead><tr><th>Date</th><th>Ref no.</th><th class="r">Total</th><th class="r">Paid</th><th class="r">Balance</th><th>Status</th></tr></thead><tbody>' +
+        l.map(r => '<tr class="click" onclick="openDelivery(\'' + r.id + '\')"><td>' + esc(r.date) + '</td><td>' + esc(r.refNo || '—') + '</td><td class="r">' + peso(r.total) + '</td><td class="r">' + peso(r.paid) + '</td><td class="r"><b>' + (r.status === 'Void' ? '—' : peso(cents(r.total - r.paid))) + '</b></td><td>' + payTag(r) + '</td></tr>').join('') + '</tbody></table></div>'
+        : '<div class="empty"><b>No deliveries yet</b>Record one under Receive Stock.</div>'),
+      '<button class="btn alt" onclick="closeModal()">Close</button>' + (x.balance > 0.004 ? '<button class="btn ok" onclick="openPay(\'' + x.id + '\')">Record payment</button>' : ''), true);
+  } catch (e) {}
+}
+function openPay(supId, recId) {
+  const x = S.suppliers.find(y => y.id === supId); if (!x) return;
+  const r = recId ? S.rcvMap[recId] : null, due = r ? cents(r.total - r.paid) : cents(x.balance);
+  openModal('Record payment — ' + x.name,
+    '<p style="margin-top:0">' + (r ? 'Delivery <b>' + esc(r.refNo || r.id) + '</b> · ' + esc(r.date) : 'Applied to the oldest unpaid deliveries first.') + '<br>Still unpaid: <b>' + peso(due) + '</b></p>' +
+    '<div class="row2"><div class="fg"><label class="f">Amount paid (₱)</label><input class="in" id="pyAmt" type="number" min="0" step="0.01"></div>' +
+    '<div class="fg"><label class="f">Paid by</label><select class="in" id="pyMeth"><option>Cash</option><option>GCash</option><option>Bank transfer</option><option>Check</option><option>Other</option></select></div></div>' +
+    '<div class="fg"><label class="f">Note (optional)</label><input class="in" id="pyNote" placeholder="e.g. Check no. 1234"></div>',
+    '<button class="btn alt" onclick="closeModal()">Cancel</button><button class="btn ok" id="pySave">Save payment</button>');
+  $('pyAmt').value = due.toFixed(2); $('pyAmt').select();
+  $('pySave').onclick = async () => {
+    try { await run('recordPayment', { supplierId: supId, receivingId: recId || '', amount: $('pyAmt').value, method: $('pyMeth').value, note: $('pyNote').value }); closeModal(); toast('Payment saved ✔'); if (cur === 'receive') loadReceivings(); }
+    catch (e) {}
+  };
+}
+
+/* ---------- Receive stock ---------- */
+async function loadReceivings() {
+  if (!$('dFrom').value) { const r = range('month'); $('dFrom').value = r[0]; $('dTo').value = r[1]; }
+  const keep = $('dSup').value;
+  $('dSup').innerHTML = '<option value="">All suppliers</option>' + S.suppliers.map(x => '<option value="' + x.id + '"' + (x.id === keep ? ' selected' : '') + '>' + esc(x.name) + '</option>').join('');
+  try {
+    S.rcv = await run('listReceivings', { from: $('dFrom').value, to: $('dTo').value, supplierId: $('dSup').value, person: $('dPer').value });
+    S.rcvMap = {}; S.rcv.forEach(r => S.rcvMap[r.id] = r); renderReceivings();
+  } catch (e) {}
+}
+function renderReceivings() {
+  const live = S.rcv.filter(r => r.status !== 'Void');
+  $('rcvStats').innerHTML = '<div class="stat"><span>Deliveries</span><b>' + live.length + '</b></div><div class="stat green"><span>Total purchased</span><b>' + peso(live.reduce((a, r) => a + r.total, 0)) + '</b></div>' +
+    '<div class="stat amber"><span>Still unpaid</span><b>' + peso(live.reduce((a, r) => a + cents(r.total - r.paid), 0)) + '</b></div><div class="stat"><span>Damaged units</span><b>' + live.reduce((a, r) => a + (r.damagedUnits || 0), 0) + '</b></div><div class="stat"><span>Delivery fees</span><b>' + peso(live.reduce((a, r) => a + (r.deliveryFee || 0), 0)) + '</b></div>';
+  $('rcvBody').innerHTML = S.rcv.length ? S.rcv.map(r => '<tr class="click" style="' + (r.status === 'Void' ? 'opacity:.55' : '') + '" onclick="openDelivery(\'' + r.id + '\')"><td>' + esc(r.date) + '</td><td><b>' + esc(r.supplierName) + '</b></td><td>' + esc(r.refNo || '—') + '</td><td>' + esc(r.deliveryPerson || '—') + (r.deliveryCompany ? '<div class="sub">' + esc(r.deliveryCompany) + '</div>' : '') + '</td><td class="r">' + r.units + (r.damagedUnits ? '<div class="sub" style="color:var(--red)">' + r.damagedUnits + ' damaged</div>' : '') + '</td><td class="r"><b>' + peso(r.total) + '</b></td><td>' + payTag(r) + '</td><td class="r"><button class="btn sm alt">View</button></td></tr>').join('')
+    : '<tr><td colspan="8"><div class="empty"><b>No deliveries in this period</b>Click “+ New delivery” to record one.</div></td></tr>';
+}
+function exportDeliveries() {
+  if (!S.rcv.length) return toast('There are no deliveries to export for this period.', true);
+  downloadCsv('pharmease-deliveries-' + $('dFrom').value + '-to-' + $('dTo').value + '.csv',
+    [['Date', 'Supplier', 'Ref no.', 'Delivered by', 'Delivery company', 'Delivery fee', 'Units', 'Damaged', 'Total', 'Paid', 'Unpaid', 'Terms', 'Due date', 'Status']].concat(S.rcv.map(r => [r.date, r.supplierName, r.refNo, r.deliveryPerson, r.deliveryCompany, r.deliveryFee, r.units, r.damagedUnits, r.total, r.paid, r.status === 'Void' ? 0 : cents(r.total - r.paid), r.terms, r.dueDate, r.status])));
+}
+function openDelivery(id) {
+  const r = S.rcvMap[id]; if (!r) return;
+  const due = cents(r.total - r.paid);
+  openModal('Delivery ' + (r.refNo || r.id),
+    '<div class="minis" style="margin:0 0 12px"><div><span>Supplier</span><b>' + esc(r.supplierName) + '</b></div><div><span>Date</span><b>' + esc(r.date) + '</b></div><div><span>Delivered by</span><b>' + esc(r.deliveryPerson || '—') + '</b>' + (r.deliveryCompany ? '<span>' + esc(r.deliveryCompany) + '</span>' : '') + '</div><div><span>Delivery fee</span><b>' + peso(r.deliveryFee || 0) + '</b></div><div><span>Payment</span><b>' + esc(r.terms) + '</b>' + (r.dueDate ? '<span>due ' + esc(r.dueDate) + '</span>' : '') + '</div><div><span>Status</span>' + payTag(r) + '</div></div>' +
+    '<div style="overflow:auto"><table style="min-width:520px"><thead><tr><th>Item</th><th class="r">Qty</th><th class="r">Damaged</th><th class="r">Cost</th><th class="r">Line total</th><th>Expiry / lot</th></tr></thead><tbody>' +
+    r.items.map(i => '<tr><td><b>' + esc(i.name) + '</b></td><td class="r">' + i.qty + '</td><td class="r">' + (i.damaged ? '<span style="color:var(--red)">' + i.damaged + '</span>' : '0') + '</td><td class="r">' + peso(i.cost) + '</td><td class="r">' + peso(i.qty * i.cost) + '</td><td>' + esc([i.expiry, i.lot].filter(Boolean).join(' · ') || '—') + '</td></tr>').join('') +
+    '</tbody></table></div><div class="tot"><span>Total ' + peso(r.total) + '</span><span>Paid ' + peso(r.paid) + '</span><span>' + (r.status === 'Void' ? 'Voided' : 'Unpaid ' + peso(due)) + '</span></div>' +
+    (r.payments && r.payments.length ? '<h4 style="margin:14px 0 6px;color:var(--c5)">Payments</h4>' + r.payments.map(y => '<div class="tl sub"><span>' + esc(y.at) + ' · ' + esc(y.method) + (y.note ? ' · ' + esc(y.note) : '') + '</span><b>' + peso(y.amount) + '</b></div>').join('') : ''),
+    '<button class="btn alt" onclick="closeModal()">Close</button>' + (r.status !== 'Void' ? '<button class="btn danger" onclick="voidDelivery(\'' + r.id + '\')">Void delivery</button>' : '') + (r.status !== 'Void' && due > 0.004 ? '<button class="btn ok" onclick="openPay(\'' + r.supplierId + '\',\'' + r.id + '\')">Record payment</button>' : ''), true);
+}
+function voidDelivery(id) {
+  confirmBox('Void this delivery? The stock it added is taken out again and it is removed from what you owe. Payments already recorded stay on the record.', 'Void delivery', async () => {
+    try { await run('voidReceiving', id); toast('Delivery voided'); loadReceivings(); } catch (e) {}
+  });
+}
+
+const RCV = { items: [] };
+const blankLine = () => ({ productId: '', name: '', qty: '', damaged: '', cost: '', expiry: '', lot: '' });
+function openReceive() {
+  if (!S.suppliers.some(x => x.active !== false)) { toast('Add a supplier first.', true); go('suppliers'); return; }
+  RCV.items = [blankLine()];
+  const people = [...new Set(S.rcv.map(r => r.deliveryPerson).filter(Boolean))];
+  const box = $('rcvFormBox'); box.style.display = '';
+  box.innerHTML = '<h3 style="margin:0 0 12px">New delivery</h3>' +
+    '<div class="row3"><div class="fg"><label class="f">Supplier *</label><select class="in" id="rSup">' + S.suppliers.filter(x => x.active !== false).map(x => '<option value="' + x.id + '">' + esc(x.name) + '</option>').join('') + '</select></div>' +
+    '<div class="fg"><label class="f">Delivery date</label><input class="in" type="date" id="rDate" value="' + ymd(new Date()) + '"></div>' +
+    '<div class="fg"><label class="f">Delivery receipt / invoice no.</label><input class="in" id="rRef" placeholder="e.g. DR-10234"></div></div>' +
+    '<div class="row3"><div class="fg"><label class="f">Delivered by</label><input class="in" id="rPer" list="rpeople" placeholder="Driver / delivery person"><datalist id="rpeople">' + people.map(x => '<option value="' + esc(x) + '">').join('') + '</datalist></div>' +
+    '<div class="fg"><label class="f">Delivery company (optional)</label><input class="in" id="rCo" placeholder="e.g. Lalamove, supplier truck"></div>' +
+    '<div class="fg"><label class="f">Delivery fee (₱)</label><input class="in" id="rFee" type="number" min="0" step="0.01" placeholder="0.00"></div></div>' +
+    '<div class="row3"><div class="fg"><label class="f">Payment</label><select class="in" id="rTerms" onchange="rcvTerms()"><option value="Paid now">Paid now</option><option value="Credit">On credit (pay later)</option></select></div>' +
+    '<div class="fg" id="rDueBox" style="display:none"><label class="f">Payment due date</label><input class="in" type="date" id="rDue"></div>' +
+    '<div class="fg" id="rMethBox"><label class="f">Paid with</label><select class="in" id="rMeth"><option>Cash</option><option>GCash</option><option>Bank transfer</option><option>Check</option><option>Other</option></select></div></div>' +
+    '<h4 style="margin:6px 0 0;color:var(--c5)">Items received</h4><datalist id="rpl">' + S.products.map(x => '<option value="' + esc(x.name) + '">').join('') + '</datalist>' +
+    '<div id="rcvRows"></div><button class="btn alt sm" style="margin-top:10px" onclick="rcvAdd()">+ Add item</button>' +
+    '<div class="tot"><span id="rcvTot"></span><span style="display:flex;gap:8px"><button class="btn alt" onclick="closeRcvForm()">Cancel</button><button class="btn ok" id="rcvSave" onclick="rcvSave()">Save delivery</button></span></div>';
+  renderRcvRows(); rcvTotals(); box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function closeRcvForm() { $('rcvFormBox').style.display = 'none'; $('rcvFormBox').innerHTML = ''; }
+function rcvTerms() {
+  const credit = $('rTerms').value === 'Credit';
+  $('rDueBox').style.display = credit ? '' : 'none'; $('rMethBox').style.display = credit ? 'none' : '';
+  if (credit && !$('rDue').value) { const d = new Date(); d.setDate(d.getDate() + 15); $('rDue').value = ymd(d); }
+}
+function renderRcvRows() {
+  $('rcvRows').innerHTML = RCV.items.map((it, i) =>
+    '<div class="rl"><div class="pn"><label>Product</label><input class="in" list="rpl" id="rp' + i + '" value="' + esc(it.name) + '" placeholder="Type a name or scan a barcode" onchange="rcvPick(' + i + ',this)"></div>' +
+    '<div><label>Qty</label><input class="in" type="number" min="1" step="1" value="' + esc(it.qty) + '" oninput="rcvSet(' + i + ',\'qty\',this.value)"></div>' +
+    '<div><label>Damaged</label><input class="in" type="number" min="0" step="1" value="' + esc(it.damaged) + '" oninput="rcvSet(' + i + ',\'damaged\',this.value)"></div>' +
+    '<div><label>Cost each (₱)</label><input class="in" id="rc' + i + '" type="number" min="0" step="0.01" value="' + esc(it.cost) + '" oninput="rcvSet(' + i + ',\'cost\',this.value)"></div>' +
+    '<div><label>Expiry</label><input class="in" type="date" value="' + esc(it.expiry) + '" oninput="rcvSet(' + i + ',\'expiry\',this.value)"></div>' +
+    '<div><label>Lot no.</label><input class="in" value="' + esc(it.lot) + '" oninput="rcvSet(' + i + ',\'lot\',this.value)"></div>' +
+    '<div><label>Selling price</label><div class="np" id="rn' + i + '"></div></div><button class="xb" onclick="rcvDel(' + i + ')" aria-label="Remove item">✕</button><div class="hint" id="rh' + i + '"></div></div>').join('');
+  RCV.items.forEach((it, i) => rcvPreview(i));
+}
+function rcvPick(i, el) {
+  const v = el.value.trim().toLowerCase(), it = RCV.items[i];
+  const p = S.products.find(x => x.name.toLowerCase() === v || (x.barcode && x.barcode === el.value.trim()) || x.id.toLowerCase() === v);
+  if (p) { it.productId = p.id; it.name = p.name; el.value = p.name; if (it.cost === '') { it.cost = p.cost; $('rc' + i).value = p.cost; } }
+  else { it.productId = ''; it.name = el.value; }
+  rcvPreview(i); rcvTotals();
+}
+function rcvSet(i, k, v) { RCV.items[i][k] = v; if (k === 'cost' || k === 'qty' || k === 'damaged') { rcvPreview(i); rcvTotals(); } }
+function rcvPreview(i) {
+  const it = RCV.items[i], p = prod(it.productId), n = $('rn' + i), h = $('rh' + i); if (!n) return;
+  if (!p) { n.innerHTML = '—'; h.innerHTML = it.name ? '<span style="color:var(--red)">Choose a product from the list.</span>' : ''; return; }
+  const cm = S.catMk[p.category], eff = p.markup != null ? p.markup : (cm != null && cm !== '' ? +cm : null), cost = it.cost === '' ? null : +it.cost;
+  let txt;
+  if (!p.auto) txt = peso(p.price) + '<small>set by hand — unchanged</small>';
+  else if (eff === null) txt = peso(p.price) + '<small>no markup set</small>';
+  else if (cost === null || cost < 0) txt = peso(p.price);
+  else { const np = Math.round(cost * (1 + eff / 100) * 100) / 100; txt = peso(np) + '<small>' + (np !== p.price ? 'was ' + peso(p.price) : 'no change') + ' · ' + eff + '%</small>'; }
+  n.innerHTML = txt;
+  h.innerHTML = 'In stock: ' + p.stock + ' · last cost ' + peso(p.cost) + (cost !== null && p.cost > 0 && cost !== p.cost ? ' · <b style="color:' + (cost > p.cost ? 'var(--red)' : 'var(--green)') + '">cost ' + (cost > p.cost ? 'went up' : 'went down') + ' by ' + peso(Math.abs(cost - p.cost)) + '</b>' : '');
+}
+function rcvTotals() {
+  let t = 0, u = 0, d = 0;
+  RCV.items.forEach(it => { const q = Math.floor(+it.qty) || 0, c = +it.cost || 0; t += q * c; u += q; d += Math.floor(+it.damaged) || 0; });
+  $('rcvTot').innerHTML = 'Total: ' + peso(cents(t)) + ' · ' + u + ' unit' + (u === 1 ? '' : 's') + (d ? ' (' + d + ' damaged)' : '');
+}
+function rcvAdd() { RCV.items.push(blankLine()); renderRcvRows(); rcvTotals(); const el = $('rp' + (RCV.items.length - 1)); if (el) el.focus(); }
+function rcvDel(i) { RCV.items.splice(i, 1); if (!RCV.items.length) RCV.items.push(blankLine()); renderRcvRows(); rcvTotals(); }
+async function rcvSave() {
+  const items = RCV.items.filter(it => it.productId || it.name || it.qty !== '').map(it => ({ productId: it.productId, qty: it.qty, damaged: it.damaged, cost: it.cost, expiry: it.expiry, lot: it.lot }));
+  const pay = { supplierId: $('rSup').value, date: $('rDate').value, refNo: $('rRef').value, deliveryPerson: $('rPer').value, deliveryCompany: $('rCo').value, deliveryFee: $('rFee').value,
+    terms: $('rTerms').value, dueDate: $('rDue').value, payMethod: $('rMeth').value, items };
+  const send = async () => {
+    try {
+      const r = await run('receiveStock', pay);
+      if (r.duplicate) return confirmBox('A delivery with the same reference number was already recorded for this supplier. Save this one anyway?', 'Save anyway', () => { pay.allowDup = true; send(); });
+      closeRcvForm(); showRcvSummary(r); loadReceivings();
+    } catch (e) {}
+  };
+  send();
+}
+function showRcvSummary(r) {
+  let h = '<p style="margin-top:0">Saved: <b>' + peso(r.total) + '</b> · ' + r.units + ' unit' + (r.units === 1 ? '' : 's') + '. Stock has been updated.</p>';
+  if (r.priceChanges.length) h += '<h4 style="margin:12px 0 6px;color:var(--c5)">Selling prices updated automatically</h4><div style="overflow:auto"><table style="min-width:0">' + r.priceChanges.map(c => '<tr><td>' + esc(c.name) + '</td><td class="r">' + peso(c.from) + ' → <b>' + peso(c.to) + '</b></td></tr>').join('') + '</table></div>';
+  if (r.reviewManual.length) h += '<h4 style="margin:12px 0 6px;color:var(--c5)">Please review</h4><p class="sub" style="margin:0 0 6px">The cost changed, but these prices were left alone because you set them by hand.</p><div style="overflow:auto"><table style="min-width:0">' + r.reviewManual.map(c => '<tr><td>' + esc(c.name) + '</td><td class="r">cost ' + peso(c.from) + ' → ' + peso(c.to) + '<div class="sub">price ' + peso(c.price) + '</div></td></tr>').join('') + '</table></div>';
+  openModal('Delivery saved ✔', h, '<button class="btn" onclick="closeModal()">Done</button>');
+}
+
 /* ---------- Sign in / session ---------- */
 const COPY = '<div class="acopy">© 2026 PharmEase. All rights reserved.</div>';
 function showAuth(html) { $('auth').innerHTML = '<div class="acard"><div class="logo">💊 PharmEase</div><div class="tag2">Pharmacy Inventory &amp; Sales</div>' + html + COPY + '</div>'; $('auth').classList.add('on'); }
@@ -1071,7 +1345,7 @@ import { initializeFirestore, getFirestore, persistentLocalCache, persistentMult
    1) PASTE YOUR FIREBASE SETTINGS HERE (Firebase console → Project settings → Your apps → Config)
    ===================================================================== */
 const firebaseConfig = {
-   apiKey: "AIzaSyCAF976Vr1WKGIRntaAbQfZ4XWL79U9k-s",
+  apiKey: "AIzaSyCAF976Vr1WKGIRntaAbQfZ4XWL79U9k-s",
   authDomain: "pharmacy-pos-6b3b0.firebaseapp.com",
   projectId: "pharmacy-pos-6b3b0",
   storageBucket: "pharmacy-pos-6b3b0.firebasestorage.app",
@@ -1106,6 +1380,10 @@ if (configured) {
   const ownerOnly = () => { if (!S.user || S.user.role !== 'Owner') fail('Only the owner can do this.'); };
   const needOnline = () => { if (!navigator.onLine) fail('You are offline. This needs an internet connection.'); };
   const byName = (a, b) => a.name.localeCompare(b.name);
+  const rid5 = () => Math.random().toString(36).slice(2, 7).toUpperCase().padEnd(5, '0');
+  const catMarkup = cat => { const v = (S.catMk || {})[cat]; return v === undefined || v === null || v === '' ? null : +v; };
+  const priceFrom = (cost, pct) => r2(cost * (1 + pct / 100));                 // exact centavos
+  const effMarkup = (info, cat) => (info && info.markup != null && info.markup !== '') ? +info.markup : catMarkup(cat);
   const ref = (...p) => doc(db, ...p);
 
   function friendly(e) {
@@ -1122,6 +1400,10 @@ if (configured) {
   const wrap = fn => async (...a) => { try { return await fn(...a); } catch (e) { throw (e instanceof Error && !e.code) ? e : new Error(friendly(e)); } };
 
   /* A write is saved on this device at once and sent when there is a connection. We don't wait for the server. */
+  async function commitNow(batch, what) {   // online: wait for the server so lists are right; offline: save on the device and sync later
+    const p = batch.commit();
+    if (navigator.onLine) await p; else fire(p, what);
+  }
   function fire(promise, what) {
     S.pending++; updateNet();
     promise.then(() => { S.pending--; updateNet(); },
@@ -1136,12 +1418,12 @@ if (configured) {
 
   /* ---------- live data (products, categories, costs) ---------- */
   let unsubs = [], prodMap = new Map(), costMap = new Map(), salesCache = {};
-  const stopListeners = () => { unsubs.forEach(u => u()); unsubs = []; prodMap = new Map(); costMap = new Map(); salesCache = {}; };   // also forget the previous user's data
+  const stopListeners = () => { unsubs.forEach(u => u()); unsubs = []; prodMap = new Map(); costMap = new Map(); salesCache = {}; S.suppliers = []; S.catMk = {}; };   // also forget the previous user's data
   const normProduct = (id, d) => ({ id, name: d.name || '', generic: d.generic || '', category: d.category || 'Others', unit: d.unit || 'pc',
     price: +d.price || 0, stock: +d.stock || 0, reorder: +d.reorder || 0, expiry: d.expiry || '', barcode: d.barcode || '',
     vatExempt: d.vatExempt === true, active: d.active !== false, cost: 0 });
   function rebuild() {
-    S.products = [...prodMap.values()].filter(p => p.active).map(p => ({ ...p, cost: costMap.get(p.id) || 0 })).sort(byName);
+    S.products = [...prodMap.values()].filter(p => p.active).map(p => { const c = costMap.get(p.id) || {}; return { ...p, cost: c.cost || 0, markup: c.markup == null ? null : c.markup, auto: c.auto === true, supplierId: c.supplierId || '' }; }).sort(byName);
   }
   function refresh() {
     rebuild();
@@ -1166,22 +1448,44 @@ if (configured) {
       unsubs.push(onSnapshot(ref('users', user.uid), snap => {
         if (S.user && (!snap.exists() || snap.data().active !== true)) { stopListeners(); signOut(auth); endSession('Your account was changed. Please sign in again.'); }
       }, () => {}));
-      if (user.role === 'Owner') unsubs.push(onSnapshot(collection(db, 'costs'), snap => {
-        costMap = new Map(snap.docs.map(d => [d.id, +d.data().cost || 0])); refresh();
-      }, e => toast(friendly(e), true)));
+      if (user.role === 'Owner') {
+        unsubs.push(onSnapshot(ref('costs', 'all'), snap => {
+          const items = (snap.data() || {}).items || {};
+          costMap = new Map(Object.keys(items).map(k => [k, { cost: +items[k].cost || 0, markup: items[k].markup == null ? null : +items[k].markup, auto: items[k].auto === true, supplierId: items[k].supplierId || '' }]));
+          refresh();
+        }, e => toast(friendly(e), true)));
+        unsubs.push(onSnapshot(ref('settings', 'pricing'), snap => { S.catMk = (snap.data() || {}).markups || {}; refresh(); }, () => {}));
+        unsubs.push(onSnapshot(collection(db, 'suppliers'), snap => {
+          S.suppliers = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort(byName);
+          if (S.user) refreshAll();
+        }, () => {}));
+      }
       setTimeout(resolve, 4000);      // never wait forever (e.g. first launch with no internet)
     });
+  }
+  async function migrateCosts() {
+    try {
+      const snap = await getDocs(collection(db, 'costs'));
+      const old = snap.docs.filter(d => d.id !== 'all'); if (!old.length) return;
+      const have = ((snap.docs.find(d => d.id === 'all') || { data: () => ({}) }).data() || {}).items || {};
+      const items = {}; old.forEach(d => { if (!have[d.id]) items[d.id] = { cost: +d.data().cost || 0, markup: null, auto: false, supplierId: '' }; });
+      if (Object.keys(items).length) await setDoc(ref('costs', 'all'), { items }, { merge: true });
+      for (let i = 0; i < old.length; i += 15) { const b = writeBatch(db); old.slice(i, i + 15).forEach(d => b.delete(d.ref || ref('costs', d.id))); await b.commit(); }
+    } catch (e) {}
   }
   const authReady = new Promise(res => { const un = onAuthStateChanged(auth, u => { un(); res(u); }); });
   onAuthStateChanged(auth, u => { if (!u && S.user) { stopListeners(); endSession('You have been signed out.'); } });
 
-  async function makeAccount(email, pin) {
+  async function makeAccount(u, pin, startVer) {
     // A second, temporary connection is used so the owner stays signed in while the account is created.
     const app2 = getApps().find(a => a.name === 'creator') || initializeApp(firebaseConfig, 'creator');
     const auth2 = getAuth(app2);
-    const cred = await createUserWithEmailAndPassword(auth2, email, pin);
-    await signOut(auth2);
-    return cred;
+    for (let ver = startVer; ver < startVer + 10; ver++) {
+      const email = ver === 1 ? emailOf(u) : u + '+' + ver + '@pharmease.app';
+      try { const cred = await createUserWithEmailAndPassword(auth2, email, pin); await signOut(auth2); return { cred, email, ver }; }
+      catch (e) { if (!(e && e.code === 'auth/email-already-in-use')) throw e; }
+    }
+    fail('That username is not available. Please choose another.');
   }
 
   /* ---------- sign in / accounts ---------- */
@@ -1219,6 +1523,7 @@ if (configured) {
     if (!snap.exists() || snap.data().active !== true) { await signOut(auth); fail('Your account is not active. Please contact the owner.'); }
     const d = snap.data(), user = { uid: u.uid, username: d.username, name: d.name, role: d.role };
     if (user.role === 'Owner') getDoc(ref('usernames', user.username)).then(n => { if (!n.exists()) setDoc(ref('usernames', user.username), { email: u.email, uid: u.uid, ver: 1 }).catch(() => {}); }).catch(() => {});
+    if (user.role === 'Owner' && navigator.onLine) await migrateCosts();
     await startListeners(user);
     let store = 'PharmEase';
     try { const m = await getDoc(ref('settings', 'main')); if (m.exists() && m.data().store) store = m.data().store; } catch (e) {}
@@ -1256,10 +1561,10 @@ if (configured) {
     if (o.isNew) {
       const pin = String(o.pin || ''); checkPin(pin);
       if ((await getDoc(ref('usernames', u))).exists()) fail('That username is already taken.');
-      const cred = await makeAccount(emailOf(u), pin);
+      const acc = await makeAccount(u, pin, 1);
       const b = writeBatch(db);
-      b.set(ref('users', cred.user.uid), { username: u, name, role, active: true });
-      b.set(ref('usernames', u), { email: emailOf(u), uid: cred.user.uid, ver: 1 });
+      b.set(ref('users', acc.cred.user.uid), { username: u, name, role, active: true });
+      b.set(ref('usernames', u), { email: acc.email, uid: acc.cred.user.uid, ver: acc.ver });
       await b.commit();
     } else {
       const ex = (S.users || []).find(x => x.username === u); if (!ex) fail('User not found.');
@@ -1277,12 +1582,25 @@ if (configured) {
     if (S.user.username === u) fail('Use "Change my PIN" for your own account.');
     const ex = (S.users || []).find(x => x.username === u); if (!ex) fail('User not found.');
     const nm = (await getDoc(ref('usernames', u))).data() || { ver: 1 };
-    const ver = (nm.ver || 1) + 1, email = u + '+' + ver + '@pharmease.app';
-    const cred = await makeAccount(email, pin);
+    const acc = await makeAccount(u, pin, (nm.ver || 1) + 1);
     const b = writeBatch(db);
-    b.set(ref('users', cred.user.uid), { username: u, name: ex.name, role: ex.role, active: ex.active !== false });
-    b.set(ref('usernames', u), { email, uid: cred.user.uid, ver });
+    b.set(ref('users', acc.cred.user.uid), { username: u, name: ex.name, role: ex.role, active: ex.active !== false });
+    b.set(ref('usernames', u), { email: acc.email, uid: acc.cred.user.uid, ver: acc.ver });
     b.update(ref('users', ex.uid), { active: false });
+    await b.commit();
+    return B.listUsers();
+  });
+
+  B.deleteUser = wrap(async username => {
+    ownerOnly(); needOnline();
+    const u = cleanUser(username);
+    if (S.user.username === u) fail('You cannot delete your own account.');
+    const ex = (S.users || []).find(x => x.username === u); if (!ex) fail('User not found.');
+    if (ex.role === 'Owner' && !S.users.some(x => x.username !== u && x.role === 'Owner' && x.active)) fail('There must be at least one active Owner.');
+    const snap = await getDocs(query(collection(db, 'users'), where('username', '==', u)));     // includes accounts replaced by an earlier PIN change
+    const b = writeBatch(db);
+    snap.docs.forEach(d => b.delete(ref('users', d.id)));
+    b.delete(ref('usernames', u));
     await b.commit();
     return B.listUsers();
   });
@@ -1301,11 +1619,25 @@ if (configured) {
     ownerOnly();
     const name = clean(p.name);
     if (!name) fail('Please enter the product name.');
-    if (p.price === '' || !(+p.price >= 0)) fail('Please enter a valid selling price.');
     if ([...prodMap.values()].some(x => x.active && x.name.toLowerCase() === name.toLowerCase() && x.id !== p.id)) fail('A product named "' + name + '" already exists.');
     const barcode = clean(p.barcode);
     if (barcode) { const d = [...prodMap.values()].find(x => x.active && x.barcode === barcode && x.id !== p.id); if (d) fail('That barcode is already used by "' + d.name + '".'); }
-    const base = { name, generic: clean(p.generic), category: p.category || 'Others', unit: clean(p.unit) || 'pc', price: r2(p.price),
+    const cat = p.category || 'Others';
+    const cost = clean(p.cost) === '' ? 0 : +p.cost;
+    if (!(cost >= 0)) fail('The cost cannot be negative.');
+    const mk = clean(p.markup) === '' ? null : +p.markup;
+    if (mk !== null && !(mk >= 0)) fail('The markup cannot be negative.');
+    const auto = p.auto === true;
+    let price;
+    if (auto) {
+      const pct = mk !== null ? mk : catMarkup(cat);
+      if (pct === null) fail('Enter a markup % (or set a default markup for this category) so the price can be worked out.');
+      price = priceFrom(cost, pct);
+    } else {
+      if (clean(p.price) === '' || !(+p.price >= 0)) fail('Please enter a valid selling price.');
+      price = r2(p.price);
+    }
+    const base = { name, generic: clean(p.generic), category: cat, unit: clean(p.unit) || 'pc', price,
       reorder: Math.max(0, Math.floor(+p.reorder || 0)), expiry: p.expiry || '', barcode, vatExempt: p.vatExempt === true, active: true };
     const b = writeBatch(db);
     let id = p.id;
@@ -1316,7 +1648,7 @@ if (configured) {
       b.set(ref('products', id), { ...base, stock });
       if (stock > 0) b.set(doc(collection(db, 'stockLog')), logEntry({ id, name }, 'Initial stock', stock, 'New product', stock));
     }
-    b.set(ref('costs', id), { cost: r2(p.cost) });
+    b.set(ref('costs', 'all'), { items: { [id]: { cost: r2(cost), markup: mk, auto, supplierId: p.supplierId || '' } } }, { merge: true });
     fire(b.commit(), 'The product');
     return S.products;
   });
@@ -1360,31 +1692,171 @@ if (configured) {
     return list;
   });
 
-  /** rows: [{name, generic, category, unit, cost, price, stock, reorder, expiry, barcode, vat_exempt}] */
+  /** rows: [{name, generic, category, unit, cost, markup, price, stock, reorder, expiry, barcode, vat_exempt}] */
   B.importProducts = wrap(async rows => {
     ownerOnly(); needOnline();
     const names = new Set([...prodMap.values()].filter(p => p.active).map(p => p.name.toLowerCase()));
     const codes = new Set([...prodMap.values()].filter(p => p.active && p.barcode).map(p => p.barcode));
-    let n = [...prodMap.keys()].reduce((m, id) => Math.max(m, parseInt(id.replace(/\D/g, '')) || 0), 0);
+    let n = [...prodMap.keys()].reduce((mx, id) => Math.max(mx, parseInt(id.replace(/\D/g, '')) || 0), 0);
     const newCats = new Set(), good = [], problems = []; let skipped = 0;
     rows.forEach((r, i) => {
-      const name = clean(r.name), price = clean(r.price) === '' ? NaN : +r.price;
-      if (!name || !(price >= 0)) { problems.push('Row ' + (i + 2) + ': a name and a valid price are required.'); return; }
+      const row = 'Row ' + (i + 2) + ': ', name = clean(r.name), cat = clean(r.category) || 'Others';
+      const cost = clean(r.cost) === '' ? 0 : +r.cost, mk = clean(r.markup) === '' ? null : +r.markup;
+      let price = clean(r.price) === '' ? NaN : +r.price, auto = false;
+      if (!name) { problems.push(row + 'a name is required.'); return; }
+      if (!(cost >= 0) || (mk !== null && !(mk >= 0))) { problems.push(row + 'cost and markup cannot be negative.'); return; }
+      if (isNaN(price)) {
+        const pct = mk !== null ? mk : catMarkup(cat);
+        if (pct === null) { problems.push(row + 'give a price, or a markup %.'); return; }
+        price = priceFrom(cost, pct); auto = true;
+      }
+      if (!(price >= 0)) { problems.push(row + 'the price is not valid.'); return; }
       const bc = clean(r.barcode);
       if (names.has(name.toLowerCase()) || (bc && codes.has(bc))) { skipped++; return; }
       names.add(name.toLowerCase()); if (bc) codes.add(bc);
-      const cat = clean(r.category) || 'Others'; if (!S.cats.includes(cat)) newCats.add(cat);
-      good.push({ id: 'P' + String(++n).padStart(4, '0'), cost: r2(r.cost), p: { name, generic: clean(r.generic), category: cat, unit: clean(r.unit) || 'pc', price: r2(price),
-        stock: Math.max(0, Math.floor(+r.stock || 0)), reorder: Math.max(0, Math.floor(+r.reorder || 0)), expiry: clean(r.expiry), barcode: bc,
-        vatExempt: /^(y|yes|true|1)$/i.test(clean(r.vat_exempt)), active: true } });
+      if (!S.cats.includes(cat)) newCats.add(cat);
+      good.push({ id: 'P' + String(++n).padStart(4, '0'), info: { cost: r2(cost), markup: mk, auto, supplierId: '' },
+        p: { name, generic: clean(r.generic), category: cat, unit: clean(r.unit) || 'pc', price: r2(price),
+          stock: Math.max(0, Math.floor(+r.stock || 0)), reorder: Math.max(0, Math.floor(+r.reorder || 0)), expiry: clean(r.expiry), barcode: bc,
+          vatExempt: /^(y|yes|true|1)$/i.test(clean(r.vat_exempt)), active: true } });
     });
-    for (let i = 0; i < good.length; i += 200) {
-      const b = writeBatch(db);
-      good.slice(i, i + 200).forEach(g => { b.set(ref('products', g.id), g.p); b.set(ref('costs', g.id), { cost: g.cost }); });
+    for (let i = 0; i < good.length; i += 15) {          // small groups keep every save well inside the database's per-request limits
+      const chunk = good.slice(i, i + 15), b = writeBatch(db), items = {};
+      chunk.forEach(g => { b.set(ref('products', g.id), g.p); items[g.id] = g.info; });
+      b.set(ref('costs', 'all'), { items }, { merge: true });
       await b.commit();
     }
     if (newCats.size) await setDoc(ref('settings', 'config'), { categories: [...S.cats, ...newCats] }, { merge: true });
     return { added: good.length, skipped, problems: problems.slice(0, 10) };
+  });
+
+  B.setCategoryMarkup = wrap(async (cat, value) => {
+    ownerOnly();
+    const v = clean(value); if (v !== '' && !(+v >= 0)) fail('The markup cannot be negative.');
+    const mk = { ...(S.catMk || {}) }; if (v === '') delete mk[cat]; else mk[cat] = r2(v);
+    fire(setDoc(ref('settings', 'pricing'), { markups: mk }), 'The markup');
+    S.catMk = mk; return true;
+  });
+  B.countCategoryAuto = wrap(async cat => S.products.filter(p => p.category === cat && p.auto && p.markup === null).length);
+  B.applyCategoryMarkup = wrap(async cat => {
+    ownerOnly();
+    const pct = catMarkup(cat); if (pct === null) fail('Set a default markup for this category first.');
+    const list = S.products.filter(p => p.category === cat && p.auto && p.markup === null).map(p => ({ p, price: priceFrom(p.cost, pct) })).filter(x => x.price !== x.p.price);
+    for (let i = 0; i < list.length; i += 15) { const b = writeBatch(db); list.slice(i, i + 15).forEach(x => b.update(ref('products', x.p.id), { price: x.price })); await commitNow(b, 'The price update'); }
+    return list.length;
+  });
+
+  /* ---------- suppliers, deliveries and what is owed ---------- */
+  const SUPPLIER_TYPES = ['Wholesale', 'Direct from company', 'Local distributor', 'Walk-in purchase'];
+  B.saveSupplier = wrap(async o => {
+    ownerOnly();
+    const name = clean(o.name); if (!name) fail('Please enter the supplier name.');
+    if ((S.suppliers || []).some(s => s.active !== false && s.name.toLowerCase() === name.toLowerCase() && s.id !== o.id)) fail('A supplier named "' + name + '" already exists.');
+    const d = { name, type: SUPPLIER_TYPES.includes(o.type) ? o.type : 'Local distributor', contactPerson: clean(o.contactPerson), contactNumber: clean(o.contactNumber), address: clean(o.address) };
+    if (o.id) fire(updateDoc(ref('suppliers', o.id), d), 'The supplier');
+    else fire(setDoc(ref('suppliers', 'SUP-' + rid5()), { ...d, active: true, balance: 0, createdAt: nowStr() }), 'The supplier');
+    return true;
+  });
+  B.setSupplierActive = wrap(async (id, active) => { ownerOnly(); fire(updateDoc(ref('suppliers', id), { active: !!active }), 'The change'); return true; });
+
+  /** o: { supplierId, date, refNo, deliveryPerson, deliveryCompany, deliveryFee, terms:'Paid now'|'Credit', dueDate, payMethod, allowDup, items:[{productId, qty, damaged, cost, expiry, lot, note}] } */
+  B.receiveStock = wrap(async o => {
+    ownerOnly();
+    const sup = (S.suppliers || []).find(s => s.id === o.supplierId); if (!sup) fail('Please choose a supplier.');
+    const date = /^\d{4}-\d\d-\d\d$/.test(o.date || '') ? o.date : ymd(new Date());
+    if (!Array.isArray(o.items) || !o.items.length) fail('Add at least one item.');
+    const fee = clean(o.deliveryFee) === '' ? 0 : r2(o.deliveryFee); if (!(fee >= 0)) fail('The delivery fee cannot be negative.');
+    const seen = new Set(), items = []; let total = 0, units = 0, damagedUnits = 0;
+    o.items.forEach((it, i) => {
+      const line = 'Line ' + (i + 1) + ': ', p = S.products.find(x => x.id === it.productId);
+      if (!p) fail(line + 'choose a product from the list.');
+      if (seen.has(p.id)) fail(p.name + ' is listed twice. Combine it into one line.'); seen.add(p.id);
+      const qty = Math.floor(+it.qty), bad = clean(it.damaged) === '' ? 0 : Math.floor(+it.damaged), cost = clean(it.cost) === '' ? NaN : r2(it.cost);
+      if (!(qty >= 1)) fail(line + 'enter the quantity delivered.');
+      if (!(bad >= 0) || bad > qty) fail(line + 'damaged cannot be more than the quantity delivered.');
+      if (!(cost >= 0)) fail(line + 'enter the cost (it cannot be negative).');
+      total += qty * cost; units += qty; damagedUnits += bad;
+      items.push({ productId: p.id, name: p.name, qty, damaged: bad, cost, expiry: clean(it.expiry), lot: clean(it.lot), note: clean(it.note) });
+    });
+    total = r2(total);
+    const refNo = clean(o.refNo);
+    if (refNo && !o.allowDup && navigator.onLine) {
+      const same = await getDocs(query(collection(db, 'receivings'), where('supplierId', '==', sup.id)));
+      if (same.docs.some(d => d.data().status !== 'Void' && String(d.data().refNo).toLowerCase() === refNo.toLowerCase())) return { duplicate: true };
+    }
+    const terms = o.terms === 'Credit' ? 'Credit' : 'Paid now', paid = terms === 'Paid now' ? total : 0;
+    const rid = 'R-' + date.replace(/-/g, '') + '-' + rid5();
+    const rec = { supplierId: sup.id, supplierName: sup.name, deliveryPerson: clean(o.deliveryPerson), deliveryCompany: clean(o.deliveryCompany), deliveryFee: fee, refNo, date,
+      items, total, units, damagedUnits, terms, dueDate: terms === 'Credit' ? clean(o.dueDate) : '', paid,
+      payments: paid ? [{ at: nowStr(), amount: paid, method: o.payMethod || 'Cash', note: 'Paid on delivery', by: S.user.name }] : [],
+      status: 'Received', createdAt: nowStr(), by: S.user.name };
+    const b = writeBatch(db), costItems = {}, priceChanges = [], reviewManual = [];
+    b.set(ref('receivings', rid), rec);
+    items.forEach(it => {
+      const p = S.products.find(x => x.id === it.productId), info = costMap.get(p.id) || {}, upd = {}, good = it.qty - it.damaged;
+      if (good > 0) upd.stock = increment(good);
+      if (info.auto === true) {                                   // price follows the new cost automatically
+        const pct = effMarkup(info, p.category);
+        if (pct !== null) { const np = priceFrom(it.cost, pct); if (np !== p.price) { upd.price = np; priceChanges.push({ name: p.name, from: p.price, to: np }); } }
+      } else if (r2(info.cost || 0) !== it.cost) reviewManual.push({ name: p.name, from: info.cost || 0, to: it.cost, price: p.price });
+      if (Object.keys(upd).length) b.update(ref('products', p.id), upd);
+      costItems[p.id] = { cost: it.cost, markup: info.markup == null ? null : info.markup, auto: info.auto === true, supplierId: info.supplierId || sup.id };
+    });
+    b.set(ref('costs', 'all'), { items: costItems }, { merge: true });
+    b.update(ref('suppliers', sup.id), { balance: increment(r2(total - paid)), lastDelivery: date });
+    await commitNow(b, 'The delivery');
+    return { id: rid, total, units, priceChanges, reviewManual };
+  });
+
+  B.listReceivings = wrap(async f => {
+    ownerOnly();
+    const snap = await getDocs(query(collection(db, 'receivings'), where('date', '>=', f.from), where('date', '<=', f.to), orderBy('date', 'desc')));
+    let list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if (f.supplierId) list = list.filter(r => r.supplierId === f.supplierId);
+    if (clean(f.person)) list = list.filter(r => (r.deliveryPerson || '').toLowerCase().includes(clean(f.person).toLowerCase()));
+    return list;
+  });
+  B.supplierReceivings = wrap(async id => {
+    ownerOnly();
+    const snap = await getDocs(query(collection(db, 'receivings'), where('supplierId', '==', id)));
+    return snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt || '').localeCompare(a.createdAt || ''));
+  });
+
+  B.voidReceiving = wrap(async id => {
+    ownerOnly();
+    const snap = await getDoc(ref('receivings', id)); if (!snap.exists()) fail('Delivery not found.');
+    const r = snap.data(); if (r.status === 'Void') fail('This delivery is already voided.');
+    const short = r.items.filter(i => { const p = S.products.find(x => x.id === i.productId); return p && p.stock < i.qty - i.damaged; });
+    if (short.length) fail('Some of these items have already been sold (' + short.map(i => i.name).join(', ') + '). Use Inventory → Adjust to correct the stock instead.');
+    const b = writeBatch(db);
+    b.update(ref('receivings', id), { status: 'Void' });
+    r.items.forEach(i => { const g = i.qty - i.damaged; if (g > 0) b.update(ref('products', i.productId), { stock: increment(-g) }); });
+    b.update(ref('suppliers', r.supplierId), { balance: increment(-r2(r.total - r.paid)) });
+    await commitNow(b, 'The void');
+    return true;
+  });
+
+  /** Pays a supplier. With receivingId: that delivery only. Without: the oldest unpaid deliveries first. */
+  B.recordPayment = wrap(async o => {
+    ownerOnly(); needOnline();
+    const amount = r2(o.amount); if (!(amount > 0)) fail('Enter the amount paid.');
+    const sup = (S.suppliers || []).find(s => s.id === o.supplierId); if (!sup) fail('Supplier not found.');
+    const snap = await getDocs(query(collection(db, 'receivings'), where('supplierId', '==', sup.id)));
+    let recs = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(r => r.status !== 'Void' && r2(r.total - r.paid) > 0);
+    if (o.receivingId) recs = recs.filter(r => r.id === o.receivingId);
+    recs.sort((a, b) => a.date.localeCompare(b.date) || (a.createdAt || '').localeCompare(b.createdAt || ''));
+    if (!recs.length) fail('There is nothing unpaid to pay.');
+    const owed = r2(recs.reduce((s, r) => s + (r.total - r.paid), 0));
+    if (amount > owed + 0.001) fail('That is more than the unpaid balance (' + peso(owed) + ').');
+    let left = amount; const b = writeBatch(db), at = nowStr();
+    recs.forEach(r => {
+      if (left <= 0) return;
+      const apply = r2(Math.min(r.total - r.paid, left)); left = r2(left - apply);
+      b.update(ref('receivings', r.id), { paid: r2(r.paid + apply), payments: [...(r.payments || []), { at, amount: apply, method: o.method || 'Cash', note: clean(o.note), by: S.user.name }] });
+    });
+    b.update(ref('suppliers', sup.id), { balance: increment(-amount) });
+    await b.commit();
+    return true;
   });
 
   /* ---------- sales ---------- */
@@ -1485,7 +1957,7 @@ if (configured) {
       revenue += d.sales || 0; count += d.count || 0; units += d.units || 0;
       Object.keys(d.items || {}).forEach(pid => {
         const it = d.items[pid], q = it.qty || 0; if (!q && !it.revenue) return;
-        const c = (costMap.get(pid) || 0) * q; dayCost += c; cost += c;
+        const c = ((costMap.get(pid) || {}).cost || 0) * q; dayCost += c; cost += c;
         const t = top[pid] || (top[pid] = { name: it.name, qty: 0, revenue: 0, profit: 0 }); t.qty += q; t.revenue += it.revenue || 0; t.profit += (it.revenue || 0) - c;
         cats[it.category || 'Others'] = (cats[it.category || 'Others'] || 0) + (it.revenue || 0);
       });
