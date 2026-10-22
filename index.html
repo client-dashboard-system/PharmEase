@@ -144,7 +144,7 @@ tr.click{cursor:pointer}
 .mf{padding:14px 22px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end;background:#F6FBFC}
 .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(30px);opacity:0;background:var(--c5);color:#fff;padding:12px 20px;border-radius:12px;font-weight:700;z-index:95;transition:.25s;pointer-events:none;max-width:90vw}
 .toast.on{opacity:1;transform:translateX(-50%)}
-.toast.err{background:var(--red)}
+.toast.err{background:var(--red);color:#fff;margin:0;min-height:0}
 .load{position:fixed;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--c1),var(--c2),var(--c1));background-size:200% 100%;animation:ld 1s linear infinite;z-index:90;display:none}
 @keyframes ld{to{background-position:-200% 0}}
 .rc{font-family:ui-monospace,Consolas,monospace;font-size:13px}
@@ -304,7 +304,8 @@ tr.click{cursor:pointer}
       <div class="pos">
         <div>
           <input class="in" id="posSearch" placeholder="🔍  Search name, ID or scan barcode… (Enter to add)" autocomplete="off">
-          <div class="chips" id="posChips"></div>
+          <select class="in" id="posCat" onchange="setPosCat(this.value)" aria-label="Category" style="margin-top:10px;width:auto;min-width:220px;max-width:100%"></select>
+          <div style="height:12px"></div>
           <div class="grid" id="posGrid"></div>
         </div>
         <div class="card cart" id="cartPanel">
@@ -422,7 +423,7 @@ tr.click{cursor:pointer}
 const S = { products: [], cats: [], cart: [], q: '', cat: 'All', method: 'Cash', store: '', token: '', user: null, vat: 0.12, sp: 0.2, users: [], suppliers: [], catMk: {}, rcv: [], rcvMap: {}, offline: false, pending: 0, syncing: false };
 const isOwner = () => !!S.user && S.user.role === 'Owner';
 const MENU = [
-  { id:'pos', ic:'🛒', t:'POS / Checkout', s:'Make a sale' },
+  { id:'pos', ic:'🛒', t:'POS / Checkout', s:'Make a sale', cash:1 },
   { id:'inventory', ic:'📦', t:'Inventory', s:'Live stock levels' },
   { id:'low', ic:'⚠️', t:'Low Stock', s:'Items to restock' },
   { id:'products', ic:'💊', t:'Products', s:'Prices & categories', own:1 },
@@ -485,9 +486,10 @@ const catOptions = (sel, all) => (all ? '<option value="All">All categories</opt
 
 /* ---------- Navigation ---------- */
 function buildMenu() {
-  $('menu').innerHTML = MENU.filter(m => !m.own || isOwner()).map(m => '<button class="mi" id="m-' + m.id + '" onclick="go(\'' + m.id + '\')"><span class="ic">' + m.ic + '</span><span>' + m.t + '<small>' + m.s + '</small></span>' + (m.id === 'low' ? '<span class="badge" id="lowBadge" style="display:none"></span>' : '') + '</button>').join('');
+  $('menu').innerHTML = MENU.filter(m => isOwner() || m.cash).map(m => '<button class="mi" id="m-' + m.id + '" onclick="go(\'' + m.id + '\')"><span class="ic">' + m.ic + '</span><span>' + m.t + '<small>' + m.s + '</small></span>' + (m.id === 'low' ? '<span class="badge" id="lowBadge" style="display:none"></span>' : '') + '</button>').join('');
 }
 function go(id) {
+  if (!isOwner() && id !== 'pos') id = 'pos';      // cashiers can only open POS / Checkout
   cur = id; toggleMenu(false); cartSheet(false);
   MENU.forEach(m => { const b = $('m-' + m.id); if (b) b.classList.toggle('on', m.id === id); $('p-' + m.id).classList.toggle('on', m.id === id); });
   $('topTitle').textContent = MENU.find(m => m.id === id).t;
@@ -497,37 +499,48 @@ function go(id) {
 }
 function refreshAll() {
   const low = S.products.filter(p => p.stock <= p.reorder).length;
-  const b = $('lowBadge'); b.style.display = low ? '' : 'none'; b.textContent = low;
+  const b = $('lowBadge'); if (b) { b.style.display = low ? '' : 'none'; b.textContent = low; }
   const fn = { pos: renderPOS, inventory: renderInventory, low: renderLow, products: renderProducts, suppliers: renderSuppliers }[cur];
   if (fn) fn();
 }
 function setProducts(list) { S.products = list; refreshAll(); }
 /* ---------- POS ---------- */
+let posCatKey = '';
+function setPosCat(v) { S.cat = v; renderGrid(); }      // products are filtered only when a category is picked
 function renderPOS() {
-  $('posChips').innerHTML = ['All', ...S.cats].map(c => '<button class="chip' + (c === S.cat ? ' on' : '') + '" data-c="' + esc(c) + '">' + esc(c) + '</button>').join('');
-  document.querySelectorAll('#posChips .chip').forEach(b => b.onclick = () => { S.cat = b.dataset.c; renderPOS(); });
+  if (S.cat !== 'All' && !S.cats.includes(S.cat)) S.cat = 'All';
+  const key = S.cats.join('|');
+  if (key !== posCatKey) { posCatKey = key; $('posCat').innerHTML = '<option value="All">All categories</option>' + S.cats.map(c => '<option value="' + esc(c) + '">' + esc(c) + '</option>').join(''); }
+  $('posCat').value = S.cat;
   renderGrid(); renderCart();
 }
+
 function posList() {
   const q = $('posSearch').value.trim().toLowerCase();
   return S.products.filter(p => (S.cat === 'All' || p.category === S.cat) && (!q || (p.name + ' ' + p.generic + ' ' + p.id + ' ' + p.barcode).toLowerCase().includes(q)));
 }
+function stockTag(p, s) {
+  if (isOwner()) return '<span class="tag ' + s.c + '" style="align-self:flex-start">' + (p.stock <= 0 ? 'Out of stock' : p.stock + ' ' + esc(p.unit) + ' left') + '</span>';
+  return p.stock <= 0 ? '<span class="tag gray" style="align-self:flex-start">Not available</span>' : '';       // cashiers never see quantities
+}
+const stockMsg = p => isOwner() ? 'Only ' + p.stock + ' in stock.' : 'Not enough stock available for ' + p.name + '.';
 function renderGrid() {
   const l = posList();
   $('posGrid').innerHTML = l.length ? l.map(p => {
     const s = stockInfo(p);
-    return '<button class="pc" ' + (p.stock <= 0 ? 'disabled' : '') + ' onclick="addCart(\'' + p.id + '\')"><b>' + esc(p.name) + '</b><span class="sub">' + esc(p.generic || p.category) + '</span><span class="tag ' + s.c + '" style="align-self:flex-start">' + (p.stock <= 0 ? 'Out of stock' : p.stock + ' ' + esc(p.unit) + ' left') + '</span><span class="pr">' + peso(p.price) + '</span></button>';
+    return '<button class="pc" ' + (p.stock <= 0 ? 'disabled' : '') + ' onclick="addCart(\'' + p.id + '\')"><b>' + esc(p.name) + '</b><span class="sub">' + esc(p.generic || p.category) + '</span>' + stockTag(p, s) + '<span class="pr">' + peso(p.price) + '</span></button>';
   }).join('') : '<div class="empty" style="grid-column:1/-1"><b>No products found</b>Try another word, or add the product in the Products menu.</div>';
 }
+
 function addCart(id) {
   const p = prod(id), c = S.cart.find(x => x.id === id);
   if (!p || p.stock <= 0) return;
-  if (c) { if (c.qty >= p.stock) return toast('Only ' + p.stock + ' in stock.', true); c.qty++; } else S.cart.push({ id, qty: 1 });
+  if (c) { if (c.qty >= p.stock) return toast(stockMsg(p), true); c.qty++; } else S.cart.push({ id, qty: 1 });
   renderCart();
 }
 function chg(id, d) {
   const c = S.cart.find(x => x.id === id), p = prod(id);
-  if (d > 0 && c.qty >= p.stock) return toast('Only ' + p.stock + ' in stock.', true);
+  if (d > 0 && c.qty >= p.stock) return toast(stockMsg(p), true);
   c.qty += d; if (c.qty <= 0) S.cart = S.cart.filter(x => x !== c); renderCart();
 }
 function rm(id) { S.cart = S.cart.filter(x => x.id !== id); renderCart(); }
@@ -542,14 +555,14 @@ function setQty(el) {
   if (!c || !p) return;
   let v = Math.floor(+el.value);
   if (!(v >= 1)) v = c.qty;
-  if (v > p.stock) { v = p.stock; toast('Only ' + p.stock + ' in stock.', true); }
+  if (v > p.stock) { v = isOwner() ? p.stock : c.qty; toast(stockMsg(p), true); }
   c.qty = v; renderCart();
 }
 function qkey(e) { if (e.key === 'Enter') { e.target.blur(); $('posSearch').focus(); } }
 function renderCart() {
   $('cartItems').innerHTML = S.cart.length ? S.cart.map(c => {
     const p = prod(c.id);
-    return '<div class="ci"><div class="cn"><b>' + esc(p.name) + '</b><small>' + peso(p.price) + ' each</small></div><div class="qty"><button onclick="chg(\'' + c.id + '\',-1)" aria-label="Less">−</button><input class="qin" type="number" inputmode="numeric" min="1" max="' + p.stock + '" value="' + c.qty + '" data-id="' + c.id + '" aria-label="Quantity" onfocus="this.select()" oninput="liveQty(this)" onchange="setQty(this)" onkeydown="qkey(event)"><button onclick="chg(\'' + c.id + '\',1)" aria-label="More">+</button></div><div class="lt" id="lt-' + c.id + '">' + peso(p.price * c.qty) + '</div><button class="x" onclick="rm(\'' + c.id + '\')" aria-label="Remove">✕</button></div>';
+    return '<div class="ci"><div class="cn"><b>' + esc(p.name) + '</b><small>' + peso(p.price) + ' each</small></div><div class="qty"><button onclick="chg(\'' + c.id + '\',-1)" aria-label="Less">−</button><input class="qin" type="number" inputmode="numeric" min="1" ' + (isOwner() ? 'max="' + p.stock + '" ' : '') + 'value="' + c.qty + '" data-id="' + c.id + '" aria-label="Quantity" onfocus="this.select()" oninput="liveQty(this)" onchange="setQty(this)" onkeydown="qkey(event)"><button onclick="chg(\'' + c.id + '\',1)" aria-label="More">+</button></div><div class="lt" id="lt-' + c.id + '">' + peso(p.price * c.qty) + '</div><button class="x" onclick="rm(\'' + c.id + '\')" aria-label="Remove">✕</button></div>';
   }).join('') : '<div class="empty"><b>Cart is empty</b>Click a product to start a sale.</div>';
   $('payBtns').innerHTML = ['Cash', 'GCash', 'Card'].map(m => '<button class="' + (S.method === m ? 'on' : '') + '" onclick="S.method=\'' + m + '\';renderCart()">' + m + '</button>').join('');
   calc();
@@ -683,14 +696,14 @@ function renderProducts() {
     : '<tr><td colspan="9"><div class="empty"><b>No products found</b>Click “+ Add Product” to add your first item.</div></td></tr>';
 }
 function openProduct(id) {
-  const p = id ? prod(id) : { name: '', generic: '', category: S.cats[0], unit: 'tablet', cost: '', markup: null, auto: true, price: '', stock: '', reorder: 10, expiry: '', barcode: '', vatExempt: false, supplierId: '' };
+  const p = id ? prod(id) : { name: '', generic: '', category: S.cats[0], unit: '', cost: '', markup: null, auto: true, price: '', stock: '', reorder: 10, expiry: '', barcode: '', vatExempt: false, supplierId: '' };
   const over = id ? !p.auto : false;
   openModal(id ? 'Edit product' : 'Add product',
     '<div class="fg"><label class="f">Product name *</label><input class="in" id="fName" value="' + esc(p.name) + '" placeholder="e.g. Biogesic 500mg"></div>' +
     '<div class="fg"><label class="f">Generic name</label><input class="in" id="fGen" value="' + esc(p.generic) + '" placeholder="e.g. Paracetamol"></div>' +
     '<div class="fg"><label class="f">Barcode (optional)</label><input class="in" id="fBar" value="' + esc(p.barcode) + '" placeholder="Scan or type the barcode"></div>' +
     '<div class="row2"><div class="fg"><label class="f">Category</label><select class="in" id="fCat" onchange="pfCalc()">' + catOptions(p.category) + '</select></div>' +
-    '<div class="fg"><label class="f">Unit</label><input class="in" id="fUnit" list="units" value="' + esc(p.unit) + '"><datalist id="units"><option>tablet<option>capsule<option>bottle<option>box<option>sachet<option>tube<option>pc</datalist></div></div>' +
+    '<div class="fg"><label class="f">Unit</label><input class="in" id="fUnit" list="units" value="' + esc(p.unit) + '" placeholder="e.g. tablet" autocomplete="off"><datalist id="units"><option>tablet<option>capsule<option>bottle<option>box<option>sachet<option>tube<option>pc</datalist></div></div>' +
     '<div class="card" style="background:var(--bg);margin-bottom:14px;padding:14px"><div class="row3"><div class="fg" style="margin:0"><label class="f">Cost (₱) *</label><input class="in" id="fCost" type="number" min="0" step="0.01" value="' + p.cost + '" oninput="pfCalc()"></div>' +
     '<div class="fg" style="margin:0"><label class="f">Markup %</label><input class="in" id="fMk" type="number" min="0" step="0.01" value="' + (p.markup == null ? '' : p.markup) + '" oninput="pfCalc()"></div>' +
     '<div class="fg" style="margin:0"><label class="f">Selling price (₱) *</label><input class="in" id="fPrice" type="number" min="0" step="0.01" value="' + p.price + '" oninput="pfCalc()"></div></div>' +
@@ -1066,14 +1079,14 @@ function openUser(username) {
   const isNew = !username;
   openModal(isNew ? 'Add user' : 'Edit user',
     '<div class="fg"><label class="f">Full name *</label><input class="in" id="uName" value="' + esc(u.name) + '"></div>' +
-    '<div class="row2"><div class="fg"><label class="f">Username *</label><input class="in" id="uUser" value="' + esc(u.username) + '"' + (isNew ? '' : ' disabled') + ' autocapitalize="none"><div class="hint">Letters and numbers, no spaces</div></div>' +
+    '<div class="row2"><div class="fg"><label class="f">Username *</label><input class="in" id="uUser" value="' + esc(u.username) + '"' + '' + ' autocapitalize="none"><div class="hint">Letters and numbers, no spaces' + (isNew ? '' : '. Changing it changes how this person signs in.') + '</div></div>' +
     '<div class="fg"><label class="f">Role</label><select class="in" id="uRole"><option' + (u.role === 'Cashier' ? ' selected' : '') + '>Cashier</option><option' + (u.role === 'Owner' ? ' selected' : '') + '>Owner</option></select></div></div>' +
     (isNew ? '<div class="fg"><label class="f">PIN * (6-8 digits)</label><input class="in" id="uPin" type="password" inputmode="numeric" maxlength="8" autocomplete="new-password"><div class="hint">The user signs in with this PIN and can change it later. Needs an internet connection.</div></div>'
            : '<label style="display:flex;gap:8px;align-items:center;font-weight:700"><input type="checkbox" id="uActive"' + (u.active ? ' checked' : '') + ' style="width:20px;height:20px"> Account is active</label><div class="hint" style="margin-top:8px">To change the PIN, use the Change PIN button in the list.</div>'),
     '<button class="btn alt" onclick="closeModal()">Cancel</button><button class="btn" id="uSave">Save user</button>');
   $('uSave').onclick = async () => {
     try {
-      S.users = await run('saveUser', { isNew, name: $('uName').value, username: $('uUser').value, role: $('uRole').value, pin: isNew ? $('uPin').value : '', active: isNew ? true : $('uActive').checked });
+      S.users = await run('saveUser', { isNew, originalUsername: username || '', name: $('uName').value, username: $('uUser').value, role: $('uRole').value, pin: isNew ? $('uPin').value : '', active: isNew ? true : $('uActive').checked });
       closeModal(); renderUsers(); toast('User saved ✔');
     } catch (e) {}
   };
@@ -1345,7 +1358,7 @@ import { initializeFirestore, getFirestore, persistentLocalCache, persistentMult
    1) PASTE YOUR FIREBASE SETTINGS HERE (Firebase console → Project settings → Your apps → Config)
    ===================================================================== */
 const firebaseConfig = {
-  apiKey: "AIzaSyCAF976Vr1WKGIRntaAbQfZ4XWL79U9k-s",
+ apiKey: "AIzaSyCAF976Vr1WKGIRntaAbQfZ4XWL79U9k-s",
   authDomain: "pharmacy-pos-6b3b0.firebaseapp.com",
   projectId: "pharmacy-pos-6b3b0",
   storageBucket: "pharmacy-pos-6b3b0.firebasestorage.app",
@@ -1510,7 +1523,9 @@ if (configured) {
     u = cleanUser(u);
     let email = emailOf(u);
     try { const nm = await getDoc(ref('usernames', u)); if (nm.exists() && nm.data().email) email = nm.data().email; } catch (e) {}
-    await signInWithEmailAndPassword(auth, email, String(pin));
+    const cred = await signInWithEmailAndPassword(auth, email, String(pin));
+    const me = await getDoc(ref('users', cred.user.uid)).catch(() => null);          // the name typed must be this account's current username
+    if (me && me.exists() && me.data().username !== u) { await signOut(auth); fail('Wrong username or PIN.'); }
     return {};
   });
 
@@ -1567,11 +1582,20 @@ if (configured) {
       b.set(ref('usernames', u), { email: acc.email, uid: acc.cred.user.uid, ver: acc.ver });
       await b.commit();
     } else {
-      const ex = (S.users || []).find(x => x.username === u); if (!ex) fail('User not found.');
+      const ex = (S.users || []).find(x => x.username === cleanUser(o.originalUsername || u)); if (!ex) fail('User not found.');
       const active = o.active !== false;
-      const otherOwners = S.users.filter(x => x.active && x.role === 'Owner' && x.username !== u).length;
+      const otherOwners = S.users.filter(x => x.active && x.role === 'Owner' && x.username !== ex.username).length;
       if (!otherOwners && (role !== 'Owner' || !active)) fail('There must be at least one active Owner.');
-      await updateDoc(ref('users', ex.uid), { username: u, name, role, active });
+      if (u !== ex.username) {            // renamed: the sign-in lookup moves to the new username
+        if (S.users.some(x => x.username === u) || (await getDoc(ref('usernames', u))).exists()) fail('That username is already taken.');
+        const old = (await getDoc(ref('usernames', ex.username))).data() || { email: emailOf(ex.username), ver: 1 };
+        const b = writeBatch(db);
+        b.update(ref('users', ex.uid), { username: u, name, role, active });
+        b.set(ref('usernames', u), { email: old.email, uid: ex.uid, ver: old.ver || 1 });
+        b.delete(ref('usernames', ex.username));
+        await b.commit();
+        if (S.user.username === ex.username) S.user.username = u;
+      } else await updateDoc(ref('users', ex.uid), { username: u, name, role, active });
     }
     return B.listUsers();
   });
@@ -1886,7 +1910,7 @@ if (configured) {
       const p = S.products.find(x => x.id === it.id), q = Math.floor(+it.qty);
       if (!p) fail('A product in the cart no longer exists.');
       if (!(q >= 1)) fail('Invalid quantity for ' + p.name + '.');
-      if (p.stock < q) fail('Not enough stock for ' + p.name + ' (only ' + p.stock + ' left).');
+      if (p.stock < q) fail('Not enough stock for ' + p.name + (user.role === 'Owner' ? ' (only ' + p.stock + ' left).' : '.'));
       const gross = q * p.price, base = p.vatExempt ? p.price : p.price / (1 + VAT_RATE);
       sub += gross; net += senior ? q * base * (1 - SENIOR_PWD_RATE) : gross; units += q;
       return { p, q, id: p.id, name: p.name, category: p.category, qty: q, price: p.price, total: r2(gross) };
