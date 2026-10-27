@@ -1,7 +1,7 @@
 /* PharmEase service worker — keeps the app itself (and the Firebase code it needs) available offline.
    Your data is kept separately by Firebase, on the device.
    To publish an update, change CACHE to a new name, e.g. 'pharmease-v4'. */
-const CACHE = 'pharmease-v8';
+const CACHE = 'pharmease-v9';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
 const SDK = ['app', 'auth', 'firestore'].map(n => 'https://www.gstatic.com/firebasejs/10.14.1/firebase-' + n + '.js');
 const ALLOWED = ['www.gstatic.com', 'fonts.googleapis.com', 'fonts.gstatic.com'];

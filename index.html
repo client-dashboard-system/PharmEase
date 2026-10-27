@@ -248,6 +248,11 @@ tr.click{cursor:pointer}
 .minis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:12px}
 .minis div{background:var(--bg);border-radius:10px;padding:10px 12px}
 .minis span{display:block;font-size:12px;color:var(--muted);font-weight:600} .minis b{color:var(--c5)}
+.npt{width:100%;border-collapse:collapse}
+.npt td{padding:9px 10px;border-top:1px solid var(--line)}
+.npt tr.sub-tot td{background:#F6FBFC}
+.npt tr.brk td{font-size:13px;color:var(--muted);padding-top:5px;padding-bottom:5px;border-top:0}
+.npt tr.tot td{border-top:2px solid var(--c5);background:var(--bg)}
 .row3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
 .catrow{display:grid;grid-template-columns:minmax(0,1fr) 96px auto auto;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
 .rl{display:grid;grid-template-columns:minmax(170px,2.4fr) 78px 78px 110px 138px 100px 130px 34px;gap:8px;align-items:end;padding:10px 0;border-bottom:1px dashed var(--line)}
@@ -374,6 +379,7 @@ tr.click{cursor:pointer}
       <div class="ph"><div><h1>Reports &amp; Monitoring</h1><p>See how your business is performing.</p></div>
         <div class="tools">
           <button class="btn alt sm" onclick="presetRep('today')">Today</button><button class="btn alt sm" onclick="presetRep('week')">Last 7 days</button><button class="btn alt sm" onclick="presetRep('days30')">Last 30 days</button><button class="btn alt sm" onclick="presetRep('month')">This month</button>
+          <button class="btn alt sm" onclick="shiftMonth('r',-1)" aria-label="Previous month">◀</button><input class="in" type="month" id="rMonth" style="width:auto" onchange="pickMonth('r')" title="Pick a month to see its net profit"><button class="btn alt sm" onclick="shiftMonth('r',1)" aria-label="Next month">▶</button>
           <input class="in" type="date" id="rFrom" style="width:auto"><span>to</span><input class="in" type="date" id="rTo" style="width:auto">
           <button class="btn sm" onclick="loadReport()">Show</button><button class="btn alt sm" onclick="printEl('rptBody')">🖨 Print</button></div></div>
       <div id="rptBody"></div>
@@ -398,6 +404,19 @@ tr.click{cursor:pointer}
         <div class="tools"><button class="btn" onclick="openSupplier()">+ Add Supplier</button></div></div>
       <div class="stats" id="supStats"></div>
       <div class="tw"><table><thead><tr><th>Supplier</th><th>Type</th><th>Contact</th><th class="r">Unpaid balance</th><th>Last delivery</th><th class="r">Actions</th></tr></thead><tbody id="supBody"></tbody></table></div>
+    </section>
+
+    <!-- Expenses & deposits -->
+    <section class="page" id="p-money">
+      <div class="ph"><div><h1>Expenses &amp; Deposits</h1><p>Record what the pharmacy spends and the cash you put in the bank. Bank deposits are optional.</p></div>
+        <div class="tools"><button class="btn" id="mnAdd" onclick="addMoney()">+ Add expense</button></div></div>
+      <div class="tools" style="margin-bottom:12px">
+        <div class="chips" id="mnTabs" style="margin:0"><button class="chip on" data-t="exp" onclick="setMoneyTab('exp')">Expenses</button><button class="chip" data-t="dep" onclick="setMoneyTab('dep')">Bank deposits</button></div>
+        <button class="btn alt sm" onclick="shiftMonth('m',-1)" aria-label="Previous month">◀</button><input class="in" type="month" id="mMonth" style="width:auto" onchange="pickMonth('m')" title="Pick a month"><button class="btn alt sm" onclick="shiftMonth('m',1)" aria-label="Next month">▶</button>
+        <select class="in" id="mCat" style="width:auto" onchange="MON.cat=this.value;renderMoney()"></select>
+        <button class="btn alt sm" onclick="exportMoney()">⬇ Export</button></div>
+      <div class="stats" id="mnStats"></div>
+      <div id="mnBody"></div>
     </section>
 
     <!-- Users -->
@@ -429,6 +448,7 @@ const MENU = [
   { id:'products', ic:'💊', t:'Products', s:'Prices & categories', own:1 },
   { id:'receive', ic:'🚚', t:'Receive Stock', s:'Deliveries from suppliers', own:1 },
   { id:'suppliers', ic:'🏭', t:'Suppliers', s:'Contacts & unpaid balances', own:1 },
+  { id:'money', ic:'💰', t:'Expenses & Deposits', s:'Costs and bank deposits', own:1 },
   { id:'sales', ic:'🧾', t:'Sales Records', s:'Past transactions' },
   { id:'reports', ic:'📊', t:'Reports', s:'Business overview', own:1 },
   { id:'users', ic:'🔑', t:'Users & Access', s:'Staff accounts', own:1 }
@@ -493,7 +513,7 @@ function go(id) {
   cur = id; toggleMenu(false); cartSheet(false);
   MENU.forEach(m => { const b = $('m-' + m.id); if (b) b.classList.toggle('on', m.id === id); $('p-' + m.id).classList.toggle('on', m.id === id); });
   $('topTitle').textContent = MENU.find(m => m.id === id).t;
-  ({ pos: renderPOS, inventory: renderInventory, low: renderLow, products: renderProducts, sales: () => { if (!$('sFrom').value) presetSales('today'); else loadSales(); }, reports: () => { if (!$('rFrom').value) presetRep('week'); else loadReport(); }, receive: loadReceivings, suppliers: renderSuppliers, users: loadUsers })[id]();
+  ({ pos: renderPOS, inventory: renderInventory, low: renderLow, products: renderProducts, sales: () => { if (!$('sFrom').value) presetSales('today'); else loadSales(); }, reports: () => { if (!$('rFrom').value) presetRep('week'); else loadReport(); }, receive: loadReceivings, suppliers: renderSuppliers, money: loadMoney, users: loadUsers })[id]();
   document.querySelector('.main').scrollTop = 0; updateBar();
   if (id === 'pos') $('posSearch').focus();
 }
@@ -651,7 +671,7 @@ function openStock(id, mode) {
   const p = prod(id);
   openModal('Update stock — ' + p.name,
     '<p style="margin-top:0">Current stock: <b>' + p.stock + ' ' + esc(p.unit) + '</b></p>' +
-    '<div class="fg"><label class="f">What happened?</label><select class="in" id="sMode"><option value="add">Add stock (restock / new delivery)</option><option value="remove">Remove stock (damaged / expired)</option><option value="set">Set exact count (after counting)</option></select></div>' +
+    '<div class="fg"><label class="f">What happened?</label><select class="in" id="sMode"><option value="add">Add stock (restock / new delivery)</option><option value="remove">Remove stock (damaged / expired) — recorded as an expense</option><option value="set">Set exact count (after counting)</option></select></div>' +
     '<div class="fg"><label class="f">Quantity</label><input class="in" id="sQty" type="number" min="0" step="1" placeholder="0"></div>' +
     '<div class="fg"><label class="f">Note (optional)</label><input class="in" id="sNote" placeholder="e.g. delivery from supplier"></div>',
     '<button class="btn alt" onclick="closeModal()">Cancel</button><button class="btn" id="sSave">Save</button>');
@@ -807,11 +827,14 @@ async function loadReport() {
   if (!from || !to || from > to) return toast('Please choose a valid date range.', true);
   try {
     const [pf, pt, n] = prevRange(from, to);
-    const [r, p] = await Promise.all([run('getReports', from, to), Backend.getReports(pf, pt).catch(() => null)]);
-    REP = { r, p, from, to, n };
+    const [r, p, pex] = await Promise.all([run('getReports', from, to), Backend.getReports(pf, pt).catch(() => null), Backend.listExpenses({ from: pf, to: pt }).catch(() => null)]);
+    let exp = [], expFailed = false;
+    try { exp = await Backend.listExpenses({ from, to }); } catch (e) { expFailed = true; toast('Expenses could not be loaded: ' + e.message, true); }
+    REP = { r, p, from, to, n, exp, pexp: pex, expFailed };
     renderReport();
   } catch (e) {}
 }
+
 const niceMax = v => { if (v <= 0) return 1; const k = Math.pow(10, Math.floor(Math.log10(v))), n = v / k; return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * k; };
 const shortPeso = v => '₱' + (v >= 1e6 ? +(v / 1e6).toFixed(1) + 'M' : v >= 1000 ? +(v / 1000).toFixed(1) + 'k' : Math.round(v));
 function trendPoints(r, from, to) {
@@ -844,9 +867,12 @@ function renderReport() {
   const hb = (nm, v, m, txt) => '<div class="hbar"><div><span>' + esc(nm) + '</span><b>' + txt + '</b></div><i><u style="width:' + Math.max(3, v / m * 100) + '%"></u></i></div>';
   const tp = trendPoints(r, from, to), peak = tp.pts.reduce((a, b) => b.sales > a.sales ? b : a, tp.pts[0] || { sales: 0, tip: '—' });
   const maxC = Math.max(1, ...r.cats.map(c => c.revenue));
+  const np = netProfit(r, REP.exp), npp = p && REP.pexp ? netProfit(p, REP.pexp) : null;
   $('rptBody').innerHTML =
     '<div class="stats"><div class="stat green"><span>Total sales</span><b>' + peso(r.revenue) + '</b>' + delta(r.revenue, p && p.revenue) + '</div>' +
-    '<div class="stat"><span>Estimated profit</span><b>' + peso(r.profit) + '</b>' + delta(r.profit, p && p.profit) + '</div>' +
+    '<div class="stat"><span>Gross profit (est.)</span><b>' + peso(r.profit) + '</b>' + delta(r.profit, p && p.profit) + '</div>' +
+    '<div class="stat amber"><span>Expenses</span><b>' + peso(np.expenses) + '</b>' + delta(np.expenses, npp && npp.expenses) + '</div>' +
+    '<div class="stat ' + (np.net >= 0 ? 'green' : 'red') + '"><span>Net profit</span><b>' + peso(np.net) + '</b>' + delta(np.net, npp && npp.net) + '</div>' +
     '<div class="stat"><span>Transactions</span><b>' + r.count + '</b>' + delta(r.count, p && p.count) + '</div>' +
     '<div class="stat"><span>Items sold</span><b>' + r.units + '</b>' + delta(r.units, p && p.units) + '</div>' +
     '<div class="stat"><span>Average per sale</span><b>' + peso(r.avg) + '</b></div></div>' +
@@ -854,6 +880,7 @@ function renderReport() {
     (r.count ? '<div class="legend"><span><i style="background:#2A7A9D"></i>Sales</span><span><i style="background:#37B3C1"></i>Estimated profit</span><span>Hover over a point for details</span></div>' + trendSvg(tp.pts) +
       '<div class="minis"><div><span>Average per day</span><b>' + peso(r.revenue / n) + '</b></div><div><span>Best ' + (tp.weekly ? 'week' : 'day') + '</span><b>' + peso(peak.sales) + '</b><span>' + esc(peak.tip) + '</span></div><div><span>Previous ' + n + ' day' + (n > 1 ? 's' : '') + '</span><b>' + (p ? peso(p.revenue) : '—') + '</b></div></div>'
       : '<div class="empty"><b>No sales in this period</b>Pick another date range.</div>') + '</div>' +
+    netCard(np, from, to, REP.expFailed) +
     '<div class="card" style="margin-bottom:16px"><h3>Top selling items</h3>' +
     '<div class="chips noprint" id="topSw" style="margin:0 0 10px"><button class="chip" data-m="qty" onclick="setTop(\'qty\')">By quantity</button><button class="chip" data-m="revenue" onclick="setTop(\'revenue\')">By sales</button><button class="chip" data-m="profit" onclick="setTop(\'profit\')">By profit</button></div>' +
     '<div class="tw"><table style="min-width:520px"><thead><tr><th class="c">#</th><th>Item</th><th class="r">Qty sold</th><th class="r">Sales</th><th class="r">Profit</th><th class="r">Share</th></tr></thead><tbody id="topBody"></tbody></table></div></div>' +
@@ -1277,6 +1304,156 @@ function showRcvSummary(r) {
   openModal('Delivery saved ✔', h, '<button class="btn" onclick="closeModal()">Done</button>');
 }
 
+/* ---------- Expenses, bank deposits and net profit ---------- */
+const LOSS_CAT = 'Expired / damaged stock';
+const EXP_CATS = ['Rent', 'Salaries & wages', 'Electricity', 'Water', 'Internet & phone', 'Transport / delivery', 'Repairs & maintenance', 'Supplies', 'Permits, licenses & taxes', LOSS_CAT, 'Other'];
+const MON = { tab: 'exp', from: '', to: '', exp: [], cash: null, cat: 'All' };
+function monthRange(v) { const [y, m] = v.split('-').map(Number); return [ymd(new Date(y, m - 1, 1)), ymd(new Date(y, m, 0))]; }
+function pickMonth(w) {
+  const v = $(w + 'Month').value; if (!/^\d{4}-\d\d$/.test(v)) return;
+  const [f, t] = monthRange(v);
+  if (w === 'r') { $('rFrom').value = f; $('rTo').value = t; loadReport(); } else { MON.from = f; MON.to = t; loadMoney(); }
+}
+function shiftMonth(w, d) {
+  let v = $(w + 'Month').value; if (!/^\d{4}-\d\d$/.test(v)) v = ymd(new Date()).slice(0, 7);
+  const [y, m] = v.split('-').map(Number), x = new Date(y, m - 1 + d, 1);
+  $(w + 'Month').value = x.getFullYear() + '-' + pad(x.getMonth() + 1); pickMonth(w);
+}
+
+/* net profit = sales - cost of goods - operating expenses - expired/damaged stock */
+function netProfit(r, exp) {
+  const by = {}; let op = 0, loss = 0;
+  (exp || []).forEach(e => { const a = +e.amount || 0; by[e.category] = cents((by[e.category] || 0) + a); if (e.category === LOSS_CAT) loss += a; else op += a; });
+  const gross = cents(r.revenue - r.cost);
+  return { sales: cents(r.revenue), cogs: cents(r.cost), gross, op: cents(op), loss: cents(loss), expenses: cents(op + loss), net: cents(gross - op - loss), by };
+}
+function netCard(np, from, to, failed) {
+  const pct = v => np.sales > 0 ? Math.round(v / np.sales * 1000) / 10 + '%' : '—';
+  const cats = Object.keys(np.by).filter(k => k !== LOSS_CAT).sort((a, b) => np.by[b] - np.by[a]);
+  const row = (label, v, cls, extra) => '<tr class="' + (cls || '') + '"><td>' + label + '</td><td class="r">' + v + '</td><td class="r sub">' + (extra || '') + '</td></tr>';
+  return '<div class="card" style="margin-bottom:16px"><h3>Net profit <span class="sub">(' + esc(from) + ' to ' + esc(to) + ')</span></h3>' +
+    (failed ? '<div class="empty" style="padding:8px;color:var(--red)"><b>Expenses could not be loaded</b>The figures below leave expenses out, so net profit looks higher than it is.</div>' : '') +
+    '<div style="overflow:auto"><table class="npt" style="min-width:0">' +
+    row('Sales (after discounts)', peso(np.sales), '', '') +
+    row('− Cost of goods sold (estimated)', peso(np.cogs), '', pct(np.cogs) + ' of sales') +
+    row('<b>= Gross profit</b>', '<b>' + peso(np.gross) + '</b>', 'sub-tot', pct(np.gross) + ' margin') +
+    row('− Operating expenses', peso(np.op), '', pct(np.op) + ' of sales') +
+    cats.map(k => row('<span style="padding-left:22px">' + esc(k) + '</span>', peso(np.by[k]), 'brk', pct(np.by[k]))).join('') +
+    row('− Expired / damaged stock', peso(np.loss), '', pct(np.loss) + ' of sales') +
+    row('<b>= NET PROFIT</b>', '<b style="font-size:18px;color:' + (np.net >= 0 ? 'var(--green)' : 'var(--red)') + '">' + peso(np.net) + '</b>', 'tot', pct(np.net) + ' net margin') +
+    '</table></div>' + (np.expenses === 0 && !failed ? '<div class="hint" style="margin-top:8px"><b>No expenses recorded for this period yet,</b> so net profit equals gross profit. Add them under Expenses &amp; Deposits.</div>' : '') +
+    '<div class="hint" style="margin-top:8px">Cost of goods uses current cost prices, so it is an estimate. Bank deposits are not expenses. They only move money to the bank.</div></div>';
+}
+
+async function loadMoney() {
+  if (!MON.from) { const m = ymd(new Date()).slice(0, 7); $('mMonth').value = m; [MON.from, MON.to] = monthRange(m); }
+  try {
+    if (MON.tab === 'exp') MON.exp = await run('listExpenses', { from: MON.from, to: MON.to });
+    else MON.cash = await run('getCashbook', MON.from, MON.to);
+    renderMoney();
+  } catch (e) {}
+}
+function setMoneyTab(t) {
+  MON.tab = t; document.querySelectorAll('#mnTabs .chip').forEach(b => b.classList.toggle('on', b.dataset.t === t));
+  $('mnAdd').textContent = t === 'exp' ? '+ Add expense' : '+ Add deposit'; loadMoney();
+}
+function addMoney() { if (MON.tab === 'exp') openExpense(); else openDeposit(); }
+function renderMoney() { $('mCat').style.display = MON.tab === 'exp' ? '' : 'none'; if (MON.tab === 'exp') renderExpenses(); else renderDeposits(); }
+const mnEmpty = (t, m) => '<tr><td colspan="7"><div class="empty"><b>' + t + '</b>' + m + '</div></td></tr>';
+
+function renderExpenses() {
+  $('mCat').innerHTML = '<option value="All">All categories</option>' + EXP_CATS.map(c => '<option' + (c === MON.cat ? ' selected' : '') + '>' + esc(c) + '</option>').join('');
+  const all = MON.exp, list = all.filter(e => MON.cat === 'All' || e.category === MON.cat);
+  const total = cents(all.reduce((a, e) => a + e.amount, 0)), loss = cents(all.filter(e => e.category === LOSS_CAT).reduce((a, e) => a + e.amount, 0));
+  $('mnStats').innerHTML = '<div class="stat amber"><span>Total expenses</span><b>' + peso(total) + '</b></div><div class="stat"><span>Operating expenses</span><b>' + peso(cents(total - loss)) + '</b></div><div class="stat"><span>Expired / damaged stock</span><b>' + peso(loss) + '</b></div><div class="stat"><span>Entries</span><b>' + all.length + '</b></div>';
+  const by = {}; all.forEach(e => by[e.category] = (by[e.category] || 0) + e.amount);
+  const keys = Object.keys(by).sort((a, b) => by[b] - by[a]), mx = Math.max(1, ...keys.map(k => by[k]));
+  $('mnBody').innerHTML = (keys.length ? '<div class="card" style="margin-bottom:16px"><h3>By category</h3>' + keys.map(k => '<div class="hbar"><div><span>' + esc(k) + '</span><b>' + peso(by[k]) + ' <span class="sub">' + (Math.round(by[k] / total * 1000) / 10) + '%</span></b></div><i><u style="width:' + Math.max(3, by[k] / mx * 100) + '%"></u></i></div>').join('') + '</div>' : '') +
+    '<div class="tw"><table><thead><tr><th>Date</th><th>Category</th><th>Details</th><th>Paid from</th><th class="r">Amount</th><th class="r">Actions</th></tr></thead><tbody>' +
+    (list.length ? list.map(e => '<tr><td>' + esc(e.date) + '</td><td><b>' + esc(e.category) + '</b>' + (e.source === 'stock' ? ' <span class="tag gray">Auto</span>' : '') + '</td><td>' + esc([e.payee, e.refNo && 'Ref ' + e.refNo, e.note].filter(Boolean).join(' · ') || '—') + '</td><td>' + (e.paidFrom === 'Till' ? 'Cash from sales' : e.paidFrom === 'Loss' ? '<span class="sub">Not cash (loss)</span>' : 'Bank / other') + '</td><td class="r"><b>' + peso(e.amount) + '</b></td><td class="r"><button class="btn sm alt" onclick="openExpense(\'' + e.id + '\')">Edit</button> <button class="btn sm alt" onclick="openExpense(\'' + e.id + '\',1)">Repeat</button> <button class="btn sm danger" onclick="delExpense(\'' + e.id + '\')">Delete</button></td></tr>').join('')
+      : mnEmpty('No expenses for this month', 'Click “+ Add expense” to record one.')) + '</tbody></table></div>';
+}
+function openExpense(id, copy) {
+  const x0 = id ? MON.exp.find(y => y.id === id) : null;
+  const x = x0 ? { ...x0 } : { date: ymd(new Date()), category: 'Rent', amount: '', paidFrom: 'Bank/Other', payee: '', refNo: '', note: '' };
+  if (copy) x.date = ymd(new Date());
+  const editId = x0 && !copy ? id : '';
+  openModal(editId ? 'Edit expense' : 'Add expense',
+    '<div class="row2"><div class="fg"><label class="f">Date *</label><input class="in" type="date" id="eDate" value="' + esc(x.date) + '"></div>' +
+    '<div class="fg"><label class="f">Category *</label><select class="in" id="eCat" onchange="expCat()">' + EXP_CATS.map(c => '<option' + (c === x.category ? ' selected' : '') + '>' + esc(c) + '</option>').join('') + '</select></div></div>' +
+    '<div class="row2"><div class="fg"><label class="f">Amount (₱) *</label><input class="in" type="number" min="0" step="0.01" id="eAmt" value="' + esc(x.amount) + '"></div>' +
+    '<div class="fg" id="ePaidBox"><label class="f">Paid from</label><select class="in" id="ePaid"><option value="Bank/Other"' + (x.paidFrom !== 'Till' ? ' selected' : '') + '>Bank / GCash / other</option><option value="Till"' + (x.paidFrom === 'Till' ? ' selected' : '') + '>Cash from sales (the till)</option></select></div></div>' +
+    '<div class="hint" id="eLossNote" style="display:none;margin:-6px 0 12px">A stock loss is not cash going out. It is the cost of the items that were lost.</div>' +
+    '<div class="row2"><div class="fg"><label class="f">Paid to (optional)</label><input class="in" id="ePayee" value="' + esc(x.payee) + '" placeholder="e.g. landlord, Meralco"></div>' +
+    '<div class="fg"><label class="f">Receipt / reference no. (optional)</label><input class="in" id="eRef" value="' + esc(x.refNo) + '"></div></div>' +
+    '<div class="fg"><label class="f">Note</label><input class="in" id="eNote" value="' + esc(x.note) + '" placeholder="Required if the category is Other"></div>',
+    '<button class="btn alt" onclick="closeModal()">Cancel</button><button class="btn" id="eSave">Save expense</button>');
+  expCat(); $('eAmt').focus();
+  $('eSave').onclick = async () => {
+    const d = $('eDate').value;
+    try {
+      await run('saveExpense', { id: editId, date: d, category: $('eCat').value, amount: $('eAmt').value, paidFrom: $('ePaid').value, payee: $('ePayee').value, refNo: $('eRef').value, note: $('eNote').value });
+      closeModal(); toast('Expense saved ✔');
+      if (/^\d{4}-\d\d/.test(d) && d.slice(0, 7) !== $('mMonth').value) { $('mMonth').value = d.slice(0, 7); [MON.from, MON.to] = monthRange(d.slice(0, 7)); }
+      loadMoney();
+    } catch (err) {}
+  };
+}
+function expCat() { const loss = $('eCat').value === LOSS_CAT; $('ePaidBox').style.display = loss ? 'none' : ''; $('eLossNote').style.display = loss ? '' : 'none'; }
+function delExpense(id) {
+  const x = MON.exp.find(y => y.id === id); if (!x) return;
+  confirmBox('Delete this expense (' + esc(x.category) + ', ' + peso(x.amount) + ')? ' + (x.source === 'stock' ? 'It was created automatically when stock was removed. The stock itself is not put back. ' : '') + 'This cannot be undone.', 'Delete', async () => { try { await run('deleteExpense', id); toast('Expense deleted'); loadMoney(); } catch (e) {} });
+}
+
+function renderDeposits() {
+  const c = MON.cash, t = c.totals;
+  $('mnStats').innerHTML = '<div class="stat green"><span>Cash sales</span><b>' + peso(t.cash) + '</b></div><div class="stat"><span>Paid from the till</span><b>' + peso(t.tillExp) + '</b></div><div class="stat"><span>Deposited to the bank</span><b>' + peso(t.deposited) + '</b></div><div class="stat ' + (t.left > 0.004 ? 'amber' : 'green') + '"><span>Not yet deposited</span><b>' + peso(t.left) + '</b></div>';
+  const days = c.days.slice().reverse();
+  $('mnBody').innerHTML =
+    '<div class="hint" style="margin-bottom:12px"><b>Not yet deposited = cash sales − expenses paid from the till − bank deposits.</b> GCash and card sales (' + peso(t.other) + ' this month) are not cash in the drawer, so they are not counted. Encoding deposits is optional: skip any day you do not deposit.</div>' +
+    '<h3 style="margin:0 0 8px;color:var(--c5)">Day by day</h3><div class="tw"><table><thead><tr><th>Date</th><th class="r">Cash sales</th><th class="r">Paid from till</th><th class="r">Deposited</th><th class="r">Not yet deposited</th><th class="r">Running total</th><th class="r"></th></tr></thead><tbody>' +
+    (days.length ? days.map(d => '<tr><td><b>' + esc(d.d) + '</b></td><td class="r">' + peso(d.cash) + '</td><td class="r">' + peso(d.tillExp) + '</td><td class="r">' + peso(d.deposited) + '</td><td class="r"><b style="color:' + (d.diff > 0.004 ? 'var(--amber)' : 'var(--green)') + '">' + peso(d.diff) + '</b></td><td class="r">' + peso(d.running) + '</td><td class="r">' + (d.diff > 0.004 ? '<button class="btn sm ok" onclick="openDeposit(\'\',{date:\'' + d.d + '\',amount:' + d.diff + '})">Deposit ' + peso(d.diff) + '</button>' : '') + '</td></tr>').join('')
+      : mnEmpty('Nothing recorded for this month', 'Cash sales appear here after the first sale.')) + '</tbody></table></div>' +
+    '<h3 style="margin:18px 0 8px;color:var(--c5)">Bank deposits</h3><div class="tw"><table><thead><tr><th>Date</th><th>Bank</th><th>Slip / reference no.</th><th>Note</th><th class="r">Amount</th><th class="r">Actions</th></tr></thead><tbody>' +
+    (c.deposits.length ? c.deposits.map(d => '<tr><td>' + esc(d.date) + '</td><td>' + esc(d.bank || '—') + '</td><td>' + esc(d.refNo || '—') + '</td><td>' + esc(d.note || '—') + '</td><td class="r"><b>' + peso(d.amount) + '</b></td><td class="r"><button class="btn sm alt" onclick="openDeposit(\'' + d.id + '\')">Edit</button> <button class="btn sm danger" onclick="delDeposit(\'' + d.id + '\')">Delete</button></td></tr>').join('')
+      : mnEmpty('No deposits recorded', 'Click “+ Add deposit” after you bank your cash, or skip it. It is optional.')) + '</tbody></table></div>';
+}
+function openDeposit(id, pre) {
+  const d0 = id ? MON.cash.deposits.find(y => y.id === id) : null;
+  const banks = [...new Set(MON.cash.deposits.map(y => y.bank).filter(Boolean))];
+  const d = d0 || { date: (pre && pre.date) || ymd(new Date()), amount: pre ? pre.amount : '', bank: banks[0] || '', refNo: '', note: '' };
+  openModal(id ? 'Edit deposit' : 'Add bank deposit',
+    '<div class="row2"><div class="fg"><label class="f">Date *</label><input class="in" type="date" id="dpDate" value="' + esc(d.date) + '"></div>' +
+    '<div class="fg"><label class="f">Amount deposited (₱) *</label><input class="in" type="number" min="0" step="0.01" id="dpAmt" value="' + esc(d.amount) + '"></div></div>' +
+    '<div class="row2"><div class="fg"><label class="f">Bank / account</label><input class="in" id="dpBank" list="dpBanks" value="' + esc(d.bank) + '" placeholder="e.g. BDO savings"><datalist id="dpBanks">' + banks.map(b => '<option value="' + esc(b) + '">').join('') + '</datalist></div>' +
+    '<div class="fg"><label class="f">Deposit slip / reference no.</label><input class="in" id="dpRef" value="' + esc(d.refNo) + '"></div></div>' +
+    '<div class="fg"><label class="f">Note (optional)</label><input class="in" id="dpNote" value="' + esc(d.note) + '"></div>',
+    '<button class="btn alt" onclick="closeModal()">Cancel</button><button class="btn" id="dpSave">Save deposit</button>');
+  $('dpAmt').focus(); $('dpAmt').select();
+  $('dpSave').onclick = async () => {
+    const dt = $('dpDate').value;
+    try {
+      await run('saveDeposit', { id: id || '', date: dt, amount: $('dpAmt').value, bank: $('dpBank').value, refNo: $('dpRef').value, note: $('dpNote').value });
+      closeModal(); toast('Deposit saved ✔');
+      if (/^\d{4}-\d\d/.test(dt) && dt.slice(0, 7) !== $('mMonth').value) { $('mMonth').value = dt.slice(0, 7); [MON.from, MON.to] = monthRange(dt.slice(0, 7)); }
+      loadMoney();
+    } catch (err) {}
+  };
+}
+function delDeposit(id) {
+  const x = MON.cash.deposits.find(y => y.id === id); if (!x) return;
+  confirmBox('Delete this deposit of ' + peso(x.amount) + ' on ' + esc(x.date) + '? This cannot be undone.', 'Delete', async () => { try { await run('deleteDeposit', id); toast('Deposit deleted'); loadMoney(); } catch (e) {} });
+}
+function exportMoney() {
+  if (MON.tab === 'exp') {
+    if (!MON.exp.length) return toast('There are no expenses to export for this month.', true);
+    downloadCsv('pharmease-expenses-' + MON.from.slice(0, 7) + '.csv', [['Date', 'Category', 'Amount', 'Paid from', 'Paid to', 'Reference', 'Note', 'Entered by']].concat(MON.exp.map(e => [e.date, e.category, e.amount, e.paidFrom, e.payee, e.refNo, e.note, e.by])));
+  } else {
+    if (!MON.cash || !MON.cash.days.length) return toast('There is nothing to export for this month.', true);
+    downloadCsv('pharmease-cashbook-' + MON.from.slice(0, 7) + '.csv', [['Date', 'Cash sales', 'Paid from till', 'Deposited', 'Not yet deposited', 'Running total']].concat(MON.cash.days.map(d => [d.d, d.cash, d.tillExp, d.deposited, d.diff, d.running])));
+  }
+}
+
 /* ---------- Sign in / session ---------- */
 const COPY = '<div class="acopy">© 2026 PharmEase. All rights reserved.</div>';
 function showAuth(html) { $('auth').innerHTML = '<div class="acard"><div class="logo">💊 PharmEase</div><div class="tag2">Pharmacy Inventory &amp; Sales</div>' + html + COPY + '</div>'; $('auth').classList.add('on'); }
@@ -1351,25 +1528,32 @@ window.onload = async () => {
 </script>
 <script type="module">
 import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
-import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updatePassword, reauthenticateWithCredential, EmailAuthProvider, deleteUser } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
-import { initializeFirestore, getFirestore, persistentLocalCache, persistentMultipleTabManager, doc, getDoc, getDocs, setDoc, updateDoc, collection, query, where, orderBy, onSnapshot, writeBatch, increment, waitForPendingWrites } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+import { getAuth, connectAuthEmulator, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updatePassword, reauthenticateWithCredential, EmailAuthProvider, deleteUser } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
+import { initializeFirestore, getFirestore, connectFirestoreEmulator, persistentLocalCache, persistentMultipleTabManager, doc, getDoc, getDocs, setDoc, updateDoc, collection, query, where, orderBy, onSnapshot, writeBatch, increment, waitForPendingWrites } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 
 /* =====================================================================
    1) PASTE YOUR FIREBASE SETTINGS HERE (Firebase console → Project settings → Your apps → Config)
    ===================================================================== */
 const firebaseConfig = {
- apiKey: "AIzaSyCAF976Vr1WKGIRntaAbQfZ4XWL79U9k-s",
-  authDomain: "pharmacy-pos-6b3b0.firebaseapp.com",
-  projectId: "pharmacy-pos-6b3b0",
-  storageBucket: "pharmacy-pos-6b3b0.firebasestorage.app",
-  messagingSenderId: "1029740260444",
-  appId: "1:1029740260444:web:4df80e8d16cb70638dca99",
-  measurementId: "G-9JHZH190YF"
+  apiKey: 'PASTE_API_KEY',
+  authDomain: 'PASTE_PROJECT_ID.firebaseapp.com',
+  projectId: 'PASTE_PROJECT_ID',
+  storageBucket: 'PASTE_PROJECT_ID.firebasestorage.app',
+  messagingSenderId: 'PASTE_SENDER_ID',
+  appId: 'PASTE_APP_ID'
 };
 /* ===================================================================== */
 
-const configured = !/PASTE_/.test(firebaseConfig.apiKey + firebaseConfig.projectId);
+const useEmu = typeof location !== 'undefined' && ['localhost', '127.0.0.1'].includes(location.hostname) && /[?&]emulator\b/.test(location.search || '');
+const placeholders = /PASTE_/.test(firebaseConfig.apiKey + firebaseConfig.projectId);
+const cfg = useEmu ? { apiKey: 'demo-key', authDomain: 'localhost', projectId: 'demo-pharmease', appId: 'demo-app' } : firebaseConfig;   // sandbox always uses a fake project
+const configured = useEmu || !placeholders;
 window.FB_READY = configured;
+if (useEmu && typeof document !== 'undefined' && document.body) {      // make it obvious this is the practice copy
+  const r = document.createElement('div'); r.textContent = 'SANDBOX · test data only';
+  r.setAttribute('style', 'position:fixed;top:0;left:0;z-index:200;background:#E0A21B;color:#16394F;font:800 11px sans-serif;padding:3px 10px;border-radius:0 0 10px 0;pointer-events:none');
+  document.body.appendChild(r);
+}
 window.Backend = {};
 
 if (configured) {
@@ -1377,11 +1561,13 @@ if (configured) {
   const SENIOR_PWD_RATE = 0.20;     // Senior Citizen / PWD discount (after removing VAT)
   const DEFAULT_CATEGORIES = ['Pain & Fever', 'Cough & Cold', 'Vitamins & Supplements', 'Antibiotics (Rx)', 'Maintenance Meds', 'First Aid', 'Personal Care', 'Others'];
 
-  const app = initializeApp(firebaseConfig);
+  const app = initializeApp(cfg);
   const auth = getAuth(app);
+  if (useEmu) connectAuthEmulator(auth, 'http://localhost:9099', { disableWarnings: true });
   let db;
   try { db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) }); }
   catch (e) { db = getFirestore(app); }          // e.g. private browsing: works, but without the offline copy
+  if (useEmu) { db = getFirestore(app); connectFirestoreEmulator(db, 'localhost', 8080); }   // sandbox: fake database, nothing real is touched
 
   /* ---------- small helpers ---------- */
   const B = window.Backend;
@@ -1491,8 +1677,9 @@ if (configured) {
 
   async function makeAccount(u, pin, startVer) {
     // A second, temporary connection is used so the owner stays signed in while the account is created.
-    const app2 = getApps().find(a => a.name === 'creator') || initializeApp(firebaseConfig, 'creator');
+    const app2 = getApps().find(a => a.name === 'creator') || initializeApp(cfg, 'creator');
     const auth2 = getAuth(app2);
+    if (useEmu && !auth2.__emu) { connectAuthEmulator(auth2, 'http://localhost:9099', { disableWarnings: true }); auth2.__emu = true; }
     for (let ver = startVer; ver < startVer + 10; ver++) {
       const email = ver === 1 ? emailOf(u) : u + '+' + ver + '@pharmease.app';
       try { const cred = await createUserWithEmailAndPassword(auth2, email, pin); await signOut(auth2); return { cred, email, ver }; }
@@ -1696,6 +1883,10 @@ if (configured) {
     const b = writeBatch(db);
     b.update(ref('products', p.id), { stock: next });
     b.set(doc(collection(db, 'stockLog')), logEntry(p, type, next - p.stock, o.note, next));
+    if (o.mode === 'remove') {            // a stock loss is an expense (valued at the current cost; not paid in cash)
+      const amt = r2(q * (p.cost || 0));
+      if (amt > 0) b.set(doc(collection(db, 'expenses')), { date: ymd(new Date()), category: LOSS_CAT, amount: amt, payee: '', refNo: '', note: p.name + ' x ' + q + (clean(o.note) ? ' - ' + clean(o.note) : ''), paidFrom: 'Loss', source: 'stock', productId: p.id, qty: q, createdAt: nowStr(), by: S.user.name });
+    }
     fire(b.commit(), 'The stock change');
     return S.products;
   });
@@ -1881,6 +2072,58 @@ if (configured) {
     b.update(ref('suppliers', sup.id), { balance: increment(-amount) });
     await b.commit();
     return true;
+  });
+
+  /* ---------- expenses and bank deposits (owner only) ---------- */
+  const isDate = d => /^\d{4}-\d\d-\d\d$/.test(d || '');
+  const rangeQ = (col, f, field) => getDocs(query(collection(db, col), where(field, '>=', f.from), where(field, '<=', f.to), orderBy(field, 'desc')));
+  B.listExpenses = wrap(async f => { ownerOnly(); return (await rangeQ('expenses', f, 'date')).docs.map(d => ({ id: d.id, ...d.data() })); });
+
+  B.saveExpense = wrap(async o => {
+    ownerOnly();
+    if (!isDate(o.date)) fail('Please choose the date.');
+    const amount = r2(o.amount); if (!(amount > 0)) fail('Enter the amount (it must be more than zero).');
+    if (!EXP_CATS.includes(o.category)) fail('Please choose a category.');
+    if (o.category === 'Other' && !clean(o.note)) fail('Please describe this expense in the note.');
+    const d = { date: o.date, category: o.category, amount, payee: clean(o.payee), refNo: clean(o.refNo), note: clean(o.note),
+      paidFrom: o.category === LOSS_CAT ? 'Loss' : (o.paidFrom === 'Till' ? 'Till' : 'Bank/Other') };
+    const b = writeBatch(db);
+    if (o.id) b.update(ref('expenses', o.id), d);
+    else b.set(ref('expenses', 'E-' + o.date.replace(/-/g, '') + '-' + rid5()), { ...d, source: 'manual', createdAt: nowStr(), by: S.user.name });
+    await commitNow(b, 'The expense');
+    return true;
+  });
+  B.deleteExpense = wrap(async id => { ownerOnly(); const b = writeBatch(db); b.delete(ref('expenses', id)); await commitNow(b, 'The delete'); return true; });
+
+  B.saveDeposit = wrap(async o => {
+    ownerOnly();
+    if (!isDate(o.date)) fail('Please choose the date.');
+    const amount = r2(o.amount); if (!(amount > 0)) fail('Enter the amount deposited (it must be more than zero).');
+    const d = { date: o.date, amount, bank: clean(o.bank), refNo: clean(o.refNo), note: clean(o.note) };
+    const b = writeBatch(db);
+    if (o.id) b.update(ref('deposits', o.id), d);
+    else b.set(ref('deposits', 'D-' + o.date.replace(/-/g, '') + '-' + rid5()), { ...d, createdAt: nowStr(), by: S.user.name });
+    await commitNow(b, 'The deposit');
+    return true;
+  });
+  B.deleteDeposit = wrap(async id => { ownerOnly(); const b = writeBatch(db); b.delete(ref('deposits', id)); await commitNow(b, 'The delete'); return true; });
+
+  /** Per day: cash sales, cash expenses paid from the till, bank deposits, and what is not yet deposited. */
+  B.getCashbook = wrap(async (from, to) => {
+    ownerOnly();
+    const f = { from, to };
+    const [dsn, esn, psn] = await Promise.all([
+      getDocs(query(collection(db, 'daily'), where('day', '>=', from), where('day', '<=', to), orderBy('day'))), rangeQ('expenses', f, 'date'), rangeQ('deposits', f, 'date')]);
+    const days = {}, get = d => days[d] || (days[d] = { d, cash: 0, other: 0, tillExp: 0, deposited: 0 });
+    dsn.docs.forEach(x => { const v = x.data(), c = ((v.byMethod || {}).Cash || {}).total || 0; get(v.day).cash += c; get(v.day).other += (v.sales || 0) - c; });
+    esn.docs.forEach(x => { const v = x.data(); if (v.paidFrom === 'Till') get(v.date).tillExp += v.amount || 0; });
+    const deposits = psn.docs.map(x => ({ id: x.id, ...x.data() }));
+    deposits.forEach(v => { get(v.date).deposited += v.amount || 0; });
+    let acc = 0;
+    const list = Object.keys(days).sort().map(k => { const x = days[k], diff = r2(x.cash - x.tillExp - x.deposited); acc = r2(acc + diff); return { d: k, cash: r2(x.cash), other: r2(x.other), tillExp: r2(x.tillExp), deposited: r2(x.deposited), diff, running: acc }; });
+    const T = list.reduce((a, x) => ({ cash: a.cash + x.cash, other: a.other + x.other, tillExp: a.tillExp + x.tillExp, deposited: a.deposited + x.deposited }), { cash: 0, other: 0, tillExp: 0, deposited: 0 });
+    return { days: list, deposits: deposits.sort((a, b) => b.date.localeCompare(a.date)),
+      totals: { cash: r2(T.cash), other: r2(T.other), tillExp: r2(T.tillExp), deposited: r2(T.deposited), left: r2(T.cash - T.tillExp - T.deposited) } };
   });
 
   /* ---------- sales ---------- */
